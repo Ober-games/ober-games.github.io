@@ -20,346 +20,383 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #000;
+      background: #050505;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #fff;
     }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      background-image:
+        linear-gradient(
+          90deg,
+          rgba(0,0,0,.05) 0%,
+          rgba(0,0,0,.12) 48%,
+          rgba(0,0,0,.78) 100%
+        ),
+        url("login-vault.jpg");
+
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
 
-    /* =========================
-       IMAGE PRINCIPALE
-       ========================= */
-
-    .vault-screen {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: #000;
-    }
-
-    .vault-image {
-      position: absolute;
-      inset: 0;
-
+    .screen {
       width: 100%;
       height: 100%;
-
-      object-fit: cover;
-      object-position: center;
-
-      user-select: none;
-      pointer-events: none;
+      position: relative;
     }
 
-
-    /* =========================
-       ZONE INTERACTIVE
-       ========================= */
-
-    .login-zone {
+    /* Ambiance sombre */
+    .vignette {
       position: absolute;
-
-      /*
-       * Position correspondant au cadre
-       * présent dans l'image.
-       */
-      right: 7.5%;
-      top: 39%;
-
-      width: 30%;
-      height: 30%;
-
-      display: flex;
-      flex-direction: column;
-
+      inset: 0;
       pointer-events: none;
+      background:
+        radial-gradient(
+          ellipse at center,
+          transparent 35%,
+          rgba(0,0,0,.2) 65%,
+          rgba(0,0,0,.75) 100%
+        );
     }
 
-
-    /* Champs transparents */
-
-    .login-input {
+    /* Bloc connexion */
+    .login-panel {
       position: absolute;
+      width: min(430px, 90vw);
+      right: 7%;
+      top: 50%;
+      transform: translateY(-50%);
 
-      left: 8%;
-      width: 84%;
+      padding: 38px 38px 30px;
 
-      height: 15%;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(10,12,13,.94),
+          rgba(4,5,6,.88)
+        );
 
-      border: none;
-      outline: none;
+      border: 1px solid rgba(210,210,210,.35);
 
-      background: transparent;
+      box-shadow:
+        0 25px 70px rgba(0,0,0,.75),
+        inset 0 0 30px rgba(255,255,255,.025);
 
-      color: white;
+      backdrop-filter: blur(5px);
+    }
 
-      font-size: clamp(14px, 1.2vw, 20px);
+    .classification {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 5px;
+      color: #999;
+      margin-bottom: 22px;
+    }
 
+    .title {
+      text-align: center;
+      font-size: 42px;
+      letter-spacing: 5px;
+      font-weight: 300;
+      margin-bottom: 5px;
+    }
+
+    .year {
+      text-align: center;
+      font-size: 20px;
+      letter-spacing: 8px;
+      color: #bbb;
+      margin-bottom: 30px;
+    }
+
+    .separator {
+      width: 80px;
+      height: 1px;
+      background: #888;
+      margin: 0 auto 25px;
+    }
+
+    .access {
+      text-align: center;
+      font-size: 14px;
+      letter-spacing: 4px;
+      margin-bottom: 25px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #999;
+    }
+
+    .field input {
+      width: 100%;
+      height: 50px;
       padding: 0 15px;
 
-      pointer-events: auto;
+      background: rgba(0,0,0,.55);
+      border: 1px solid #555;
 
-      /*
-       * On ne voit pas de nouveau cadre :
-       * celui-ci existe déjà dans l'image.
-       */
+      color: white;
+      font-size: 16px;
+
+      outline: none;
     }
 
-    .login-input::placeholder {
-      color: rgba(255,255,255,0);
+    .field input:focus {
+      border-color: #aaa;
+      box-shadow: 0 0 12px rgba(255,255,255,.08);
     }
-
-    .login-input:focus {
-      background: rgba(255,255,255,.025);
-    }
-
-    #identifier {
-      top: 16%;
-    }
-
-    #password {
-      top: 39%;
-    }
-
-
-    /* =========================
-       BOUTON INVISIBLE
-       ========================= */
 
     .open-button {
-      position: absolute;
+      width: 100%;
+      height: 55px;
+      margin-top: 10px;
 
-      left: 8%;
-      width: 84%;
+      border: 1px solid #aaa;
+      background: linear-gradient(#e8e8e8, #aaa);
 
-      top: 62%;
-      height: 18%;
+      color: #111;
 
-      border: none;
-      background: transparent;
+      font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 3px;
 
       cursor: pointer;
 
-      pointer-events: auto;
+      transition:
+        transform .2s,
+        filter .2s;
     }
 
     .open-button:hover {
-      background: rgba(255,255,255,.035);
+      filter: brightness(1.15);
     }
 
     .open-button:active {
-      background: rgba(255,255,255,.08);
+      transform: scale(.98);
     }
 
-
-    /* =========================
-       MESSAGE D'ERREUR
-       ========================= */
-
     .message {
-      position: absolute;
-
-      left: 5%;
-      width: 90%;
-
-      top: 83%;
+      min-height: 20px;
+      margin-top: 15px;
 
       text-align: center;
 
-      color: rgba(255,255,255,.8);
-
-      font-size: clamp(8px, .8vw, 13px);
-
+      font-size: 11px;
       letter-spacing: 2px;
 
-      pointer-events: none;
+      color: #aaa;
     }
 
+    .bottom {
+      margin-top: 25px;
+      padding-top: 18px;
 
-    /* =========================
-       COMPTE À REBOURS
-       ========================= */
+      border-top: 1px solid #333;
+
+      text-align: center;
+
+      font-size: 9px;
+      letter-spacing: 3px;
+
+      color: #666;
+    }
 
     .countdown {
       position: absolute;
+      left: 4%;
+      bottom: 25px;
 
-      left: 9%;
-      bottom: 17%;
-
-      color: rgba(255,255,255,.75);
-
-      font-size: clamp(9px, 1vw, 15px);
-
+      font-size: 11px;
       letter-spacing: 3px;
 
-      text-shadow:
-        0 2px 5px #000,
-        0 0 10px #000;
+      color: rgba(255,255,255,.6);
 
-      pointer-events: none;
+      text-shadow: 0 2px 5px #000;
     }
 
-
-    /* =========================
-       ANIMATION D'OUVERTURE
-       ========================= */
-
-    .vault-screen.unlocking .vault-image {
-      animation:
-        vaultLight 1.4s ease forwards;
+    /* Animation après connexion */
+    .screen.unlocking .login-panel {
+      opacity: 0;
+      transform: translateY(-50%) translateX(80px);
+      transition: 1s ease;
     }
 
-    .vault-screen.unlocking .login-zone {
-      animation:
-        interfaceFade .7s ease forwards;
+    .screen.unlocking {
+      animation: cinematicFade 1.5s forwards;
     }
 
-    @keyframes vaultLight {
-
+    @keyframes cinematicFade {
       0% {
         filter: brightness(1);
       }
 
-      45% {
-        filter: brightness(1.35);
-      }
-
       100% {
-        filter: brightness(.15);
-        transform: scale(1.02);
+        filter: brightness(.35);
       }
     }
 
-    @keyframes interfaceFade {
-
-      0% {
-        opacity: 1;
-      }
-
-      100% {
-        opacity: 0;
-      }
-    }
-
-
-    /* =========================
-       MOBILE
-       ========================= */
-
+    /* MOBILE */
     @media (max-width: 700px) {
 
-      .vault-image {
-        object-position: 55% center;
+      body {
+        background-position: 38% center;
       }
 
-      /*
-       * Sur téléphone le panneau de connexion
-       * occupe davantage de largeur.
-       */
+      .login-panel {
+        right: 50%;
+        top: auto;
+        bottom: 25px;
+        transform: translateX(50%);
 
-      .login-zone {
-        right: 4%;
-        top: 49%;
+        width: calc(100% - 30px);
 
-        width: 53%;
-        height: 29%;
+        padding: 25px 22px 20px;
+
+        background:
+          linear-gradient(
+            145deg,
+            rgba(5,6,7,.92),
+            rgba(3,3,3,.86)
+          );
       }
 
-      .login-input {
-        font-size: 14px;
-        padding: 0 8px;
+      .title {
+        font-size: 27px;
+        letter-spacing: 4px;
+      }
+
+      .year {
+        font-size: 15px;
+        margin-bottom: 18px;
+      }
+
+      .separator {
+        margin-bottom: 18px;
+      }
+
+      .access {
+        margin-bottom: 18px;
+      }
+
+      .field {
+        margin-bottom: 10px;
+      }
+
+      .field input {
+        height: 44px;
+      }
+
+      .open-button {
+        height: 48px;
+      }
+
+      .bottom {
+        margin-top: 15px;
+        padding-top: 12px;
       }
 
       .countdown {
-        left: 6%;
-        bottom: 4%;
-
-        font-size: 8px;
-        letter-spacing: 1.5px;
-      }
-
-      .message {
-        font-size: 8px;
+        display: none;
       }
     }
-
   </style>
 </head>
 
-
 <body>
 
-  <main class="vault-screen" id="vaultScreen">
+  <div class="screen" id="screen">
 
-    <!-- IMAGE DU COFFRE -->
-    <img
-      src="login-vault.jpg"
-      class="vault-image"
-      alt=""
-    >
+    <div class="vignette"></div>
 
+    <div class="login-panel">
 
-    <!--
-      ZONES INTERACTIVES INVISIBLES
-    -->
+      <div class="classification">
+        PROJET OG — DOSSIER SPÉCIAL
+      </div>
 
-    <form
-      class="login-zone"
-      id="login-form"
-    >
+      <div class="title">
+        OBER’GAMES
+      </div>
 
-      <input
-        id="identifier"
-        class="login-input"
-        type="text"
-        autocomplete="username"
-        aria-label="Identifiant"
-        required
-      >
+      <div class="year">
+        2027
+      </div>
 
-      <input
-        id="password"
-        class="login-input"
-        type="password"
-        autocomplete="current-password"
-        aria-label="Mot de passe"
-        required
-      >
+      <div class="separator"></div>
 
-      <button
-        class="open-button"
-        type="submit"
-        aria-label="Ouvrir le coffre"
-      ></button>
+      <div class="access">
+        ACCÈS AU DOSSIER
+      </div>
 
-      <div
-        class="message"
-        id="login-message"
-      ></div>
+      <form id="login-form">
 
-    </form>
+        <div class="field">
+          <label for="identifier">
+            IDENTIFIANT
+          </label>
 
+          <input
+            id="identifier"
+            type="text"
+            placeholder="Votre identifiant"
+            autocomplete="username"
+            required
+          >
+        </div>
 
-    <!-- COMPTE À REBOURS -->
+        <div class="field">
+          <label for="password">
+            MOT DE PASSE
+          </label>
 
-    <div
-      class="countdown"
-      id="countdown"
-    >
-      CHARGEMENT...
+          <input
+            id="password"
+            type="password"
+            placeholder="Votre mot de passe"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button
+          class="open-button"
+          type="submit"
+        >
+          OUVRIR LE COFFRE →
+        </button>
+
+        <div
+          class="message"
+          id="login-message"
+        ></div>
+
+      </form>
+
+      <div class="bottom">
+        ACCÈS RÉSERVÉ AUX PARTICIPANTS
+      </div>
+
     </div>
 
-  </main>
+    <div class="countdown" id="countdown">
+      INITIALISATION DU COMPTE À REBOURS...
+    </div>
 
+  </div>
 
   <script>
 
     /*
-     * ============================
      * SUPABASE
-     * ============================
      */
 
     const supabaseClient =
@@ -370,36 +407,28 @@
 
 
     /*
-     * ============================
      * COMPTE À REBOURS
-     * ============================
      */
 
     const eventDate =
-      new Date(
-        "2027-06-12T11:00:00+02:00"
-      ).getTime();
-
+      new Date("2027-06-12T11:00:00+02:00").getTime();
 
     function updateCountdown() {
 
       const now =
-        Date.now();
+        new Date().getTime();
 
       const difference =
         eventDate - now;
 
-
       if (difference <= 0) {
 
-        document
-          .getElementById("countdown")
+        document.getElementById("countdown")
           .textContent =
           "LES OBER’GAMES ONT COMMENCÉ";
 
         return;
       }
-
 
       const days =
         Math.floor(
@@ -424,16 +453,12 @@
           (difference / 1000) % 60
         );
 
-
-      document
-        .getElementById("countdown")
+      document.getElementById("countdown")
         .textContent =
-        `${days}J ` +
-        `${String(hours).padStart(2,"0")}H ` +
+        `${days}J ${String(hours).padStart(2,"0")}H ` +
         `${String(minutes).padStart(2,"0")}M ` +
         `${String(seconds).padStart(2,"0")}S`;
     }
-
 
     updateCountdown();
 
@@ -444,13 +469,11 @@
 
 
     /*
-     * ============================
      * CONNEXION
-     * ============================
      *
-     * Le système identifiant →
-     * compte Supabase sera branché
-     * à l'étape suivante.
+     * La véritable liaison
+     * identifiant → compte Supabase
+     * sera ajoutée juste après.
      */
 
     document
@@ -461,70 +484,26 @@
 
           event.preventDefault();
 
-
-          const identifier =
-            document
-              .getElementById("identifier")
-              .value
-              .trim();
-
-          const password =
-            document
-              .getElementById("password")
-              .value;
-
-
           const message =
-            document
-              .getElementById("login-message");
-
+            document.getElementById(
+              "login-message"
+            );
 
           message.textContent =
-            "VÉRIFICATION...";
-
+            "VÉRIFICATION DES ACCÈS...";
 
           /*
-           * Pour le moment, on teste uniquement
-           * l'animation visuelle.
+           * Temporairement désactivé.
            *
-           * L'authentification réelle sera branchée
-           * juste après.
+           * Nous allons créer une fonction
+           * sécurisée permettant d'utiliser
+           * "Simon-admin" comme identifiant
+           * au lieu de demander l'adresse e-mail
+           * technique de Supabase.
            */
 
-          if (
-            identifier === "Simon-admin" &&
-            password === "Ober’games2027"
-          ) {
-
-            message.textContent =
-              "ACCÈS AUTORISÉ";
-
-            document
-              .getElementById("vaultScreen")
-              .classList
-              .add("unlocking");
-
-
-            /*
-             * TEMPORAIRE :
-             * la véritable ouverture de la porte
-             * sera ajoutée ensuite.
-             */
-
-            setTimeout(() => {
-
-              window.location.href =
-                "/admin/";
-
-            }, 1500);
-
-
-          } else {
-
-            message.textContent =
-              "ACCÈS REFUSÉ";
-
-          }
+          message.textContent =
+            "SYSTÈME D’AUTHENTIFICATION EN PRÉPARATION";
 
         }
       );
