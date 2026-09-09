@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Ober'Games 2027</title>
+  <title>Projet OG — Ober'Games 2027</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
@@ -14,312 +14,438 @@
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at center, #1b1b1b 0%, #080808 55%, #000 100%);
-      color: #f2f2f2;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #050505;
       font-family: Arial, Helvetica, sans-serif;
+      color: #fff;
     }
 
-    .page {
+    body {
+      background-image:
+        linear-gradient(
+          90deg,
+          rgba(0,0,0,.05) 0%,
+          rgba(0,0,0,.12) 48%,
+          rgba(0,0,0,.78) 100%
+        ),
+        url("login-vault.jpg");
+
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .screen {
       width: 100%;
-      max-width: 1100px;
-      margin: auto;
-      padding: 35px 20px 60px;
+      height: 100%;
+      position: relative;
     }
 
-    .logo {
-      display: block;
-      max-width: 420px;
-      width: 80%;
-      margin: 10px auto 35px;
+    /* Ambiance sombre */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          ellipse at center,
+          transparent 35%,
+          rgba(0,0,0,.2) 65%,
+          rgba(0,0,0,.75) 100%
+        );
     }
 
-    .classified {
+    /* Bloc connexion */
+    .login-panel {
+      position: absolute;
+      width: min(430px, 90vw);
+      right: 7%;
+      top: 50%;
+      transform: translateY(-50%);
+
+      padding: 38px 38px 30px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(10,12,13,.94),
+          rgba(4,5,6,.88)
+        );
+
+      border: 1px solid rgba(210,210,210,.35);
+
+      box-shadow:
+        0 25px 70px rgba(0,0,0,.75),
+        inset 0 0 30px rgba(255,255,255,.025);
+
+      backdrop-filter: blur(5px);
+    }
+
+    .classification {
       text-align: center;
+      font-size: 10px;
       letter-spacing: 5px;
-      font-size: 11px;
-      color: #777;
-      margin-bottom: 25px;
-    }
-
-    .hero {
-      text-align: center;
-      border-top: 1px solid #333;
-      border-bottom: 1px solid #333;
-      padding: 30px 10px;
-    }
-
-    .date {
-      font-size: 26px;
-      font-weight: bold;
-      letter-spacing: 3px;
-    }
-
-    .time {
-      margin-top: 10px;
-      font-size: 18px;
-      color: #aaa;
-    }
-
-    .address {
-      margin-top: 20px;
-      color: #bbb;
-      font-size: 14px;
-    }
-
-    .countdown {
-      margin-top: 30px;
-      font-size: 28px;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-
-    .login-section {
-      max-width: 450px;
-      margin: 50px auto 0;
-      padding: 30px;
-      border: 1px solid #333;
-      background: rgba(10,10,10,.8);
-    }
-
-    .login-title {
-      text-align: center;
-      letter-spacing: 3px;
-      margin-bottom: 25px;
-    }
-
-    label {
-      display: block;
-      margin: 15px 0 7px;
       color: #999;
-      font-size: 13px;
+      margin-bottom: 22px;
     }
 
-    input {
+    .title {
+      text-align: center;
+      font-size: 42px;
+      letter-spacing: 5px;
+      font-weight: 300;
+      margin-bottom: 5px;
+    }
+
+    .year {
+      text-align: center;
+      font-size: 20px;
+      letter-spacing: 8px;
+      color: #bbb;
+      margin-bottom: 30px;
+    }
+
+    .separator {
+      width: 80px;
+      height: 1px;
+      background: #888;
+      margin: 0 auto 25px;
+    }
+
+    .access {
+      text-align: center;
+      font-size: 14px;
+      letter-spacing: 4px;
+      margin-bottom: 25px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #999;
+    }
+
+    .field input {
       width: 100%;
-      padding: 14px;
-      background: #111;
+      height: 50px;
+      padding: 0 15px;
+
+      background: rgba(0,0,0,.55);
+      border: 1px solid #555;
+
       color: white;
-      border: 1px solid #444;
-      outline: none;
       font-size: 16px;
+
+      outline: none;
     }
 
-    input:focus {
-      border-color: #888;
+    .field input:focus {
+      border-color: #aaa;
+      box-shadow: 0 0 12px rgba(255,255,255,.08);
     }
 
-    button {
+    .open-button {
       width: 100%;
-      margin-top: 25px;
-      padding: 14px;
-      border: 1px solid #777;
-      background: #eee;
+      height: 55px;
+      margin-top: 10px;
+
+      border: 1px solid #aaa;
+      background: linear-gradient(#e8e8e8, #aaa);
+
       color: #111;
+
       font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 3px;
+
       cursor: pointer;
-      letter-spacing: 2px;
+
+      transition:
+        transform .2s,
+        filter .2s;
     }
 
-    button:hover {
-      background: white;
+    .open-button:hover {
+      filter: brightness(1.15);
+    }
+
+    .open-button:active {
+      transform: scale(.98);
     }
 
     .message {
-      text-align: center;
-      margin-top: 15px;
       min-height: 20px;
-      color: #aaa;
-      font-size: 14px;
-    }
+      margin-top: 15px;
 
-    footer {
-      margin-top: 60px;
       text-align: center;
-      color: #555;
+
       font-size: 11px;
       letter-spacing: 2px;
+
+      color: #aaa;
+    }
+
+    .bottom {
+      margin-top: 25px;
+      padding-top: 18px;
+
+      border-top: 1px solid #333;
+
+      text-align: center;
+
+      font-size: 9px;
+      letter-spacing: 3px;
+
+      color: #666;
+    }
+
+    .countdown {
+      position: absolute;
+      left: 4%;
+      bottom: 25px;
+
+      font-size: 11px;
+      letter-spacing: 3px;
+
+      color: rgba(255,255,255,.6);
+
+      text-shadow: 0 2px 5px #000;
+    }
+
+    /* Animation après connexion */
+    .screen.unlocking .login-panel {
+      opacity: 0;
+      transform: translateY(-50%) translateX(80px);
+      transition: 1s ease;
+    }
+
+    .screen.unlocking {
+      animation: cinematicFade 1.5s forwards;
+    }
+
+    @keyframes cinematicFade {
+      0% {
+        filter: brightness(1);
+      }
+
+      100% {
+        filter: brightness(.35);
+      }
+    }
+
+    /* MOBILE */
+    @media (max-width: 700px) {
+
+      body {
+        background-position: 38% center;
+      }
+
+      .login-panel {
+        right: 50%;
+        top: auto;
+        bottom: 25px;
+        transform: translateX(50%);
+
+        width: calc(100% - 30px);
+
+        padding: 25px 22px 20px;
+
+        background:
+          linear-gradient(
+            145deg,
+            rgba(5,6,7,.92),
+            rgba(3,3,3,.86)
+          );
+      }
+
+      .title {
+        font-size: 27px;
+        letter-spacing: 4px;
+      }
+
+      .year {
+        font-size: 15px;
+        margin-bottom: 18px;
+      }
+
+      .separator {
+        margin-bottom: 18px;
+      }
+
+      .access {
+        margin-bottom: 18px;
+      }
+
+      .field {
+        margin-bottom: 10px;
+      }
+
+      .field input {
+        height: 44px;
+      }
+
+      .open-button {
+        height: 48px;
+      }
+
+      .bottom {
+        margin-top: 15px;
+        padding-top: 12px;
+      }
+
+      .countdown {
+        display: none;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <main class="page">
+  <div class="screen" id="screen">
 
-    <div class="classified">
-      DOSSIER — OG / 2027
-    </div>
+    <div class="vignette"></div>
 
-    <!-- Logo Ober'Games -->
-    <img
-      class="logo"
-      src="logo-obergames.png"
-      alt="Ober'Games"
-    >
+    <div class="login-panel">
 
-    <section class="hero">
-
-      <div class="date">
-        12 JUIN 2027
+      <div class="classification">
+        PROJET OG — DOSSIER SPÉCIAL
       </div>
 
-      <div class="time">
-        11H00
+      <div class="title">
+        OBER’GAMES
       </div>
 
-      <div class="address">
-        9 rue des Vignes<br>
-        67360 OBERDORF-SPACHBACH
+      <div class="year">
+        2027
       </div>
 
-      <div class="countdown" id="countdown">
-        CHARGEMENT...
-      </div>
+      <div class="separator"></div>
 
-    </section>
-
-    <section class="login-section">
-
-      <div class="login-title">
+      <div class="access">
         ACCÈS AU DOSSIER
       </div>
 
       <form id="login-form">
 
-        <label for="identifier">
-          IDENTIFIANT
-        </label>
+        <div class="field">
+          <label for="identifier">
+            IDENTIFIANT
+          </label>
 
-        <input
-          id="identifier"
-          type="text"
-          autocomplete="username"
-          required
+          <input
+            id="identifier"
+            type="text"
+            placeholder="Votre identifiant"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="password">
+            MOT DE PASSE
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Votre mot de passe"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button
+          class="open-button"
+          type="submit"
         >
-
-        <label for="password">
-          MOT DE PASSE
-        </label>
-
-        <input
-          id="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        >
-
-        <button type="submit">
-          OUVRIR LE DOSSIER
+          OUVRIR LE COFFRE →
         </button>
 
-        <div class="message" id="login-message"></div>
+        <div
+          class="message"
+          id="login-message"
+        ></div>
 
       </form>
 
-    </section>
+      <div class="bottom">
+        ACCÈS RÉSERVÉ AUX PARTICIPANTS
+      </div>
 
-    <footer>
-      OBER'GAMES — CLASSIFIED
-    </footer>
+    </div>
 
-  </main>
+    <div class="countdown" id="countdown">
+      INITIALISATION DU COMPTE À REBOURS...
+    </div>
+
+  </div>
 
   <script>
 
-    const supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
-    );
-
     /*
-      Pour le moment, cette fonction sert uniquement
-      à vérifier que la connexion Supabase fonctionne.
-    */
+     * SUPABASE
+     */
 
-    document
-      .getElementById("login-form")
-      .addEventListener("submit", async function(event) {
-
-        event.preventDefault();
-
-        const identifier =
-          document.getElementById("identifier").value.trim();
-
-        const password =
-          document.getElementById("password").value;
-
-        const message =
-          document.getElementById("login-message");
-
-        message.textContent = "AUTHENTIFICATION...";
-
-        /*
-          L'identifiant sera relié plus tard à l'adresse
-          technique du compte Supabase.
-
-          Pour notre premier test administrateur,
-          on utilise directement l'adresse du compte créée
-          dans Supabase.
-        */
-
-        const email = identifier;
-
-        const { error } =
-          await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: password
-          });
-
-        if (error) {
-          message.textContent =
-            "ACCÈS REFUSÉ — IDENTIFIANTS INVALIDES";
-          return;
-        }
-
-        message.textContent =
-          "ACCÈS AUTORISÉ";
-
-        setTimeout(() => {
-          window.location.href = "/admin/";
-        }, 700);
-
-      });
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+      );
 
 
     /*
-      COMPTE À REBOURS
-    */
+     * COMPTE À REBOURS
+     */
 
     const eventDate =
       new Date("2027-06-12T11:00:00+02:00").getTime();
 
     function updateCountdown() {
 
-      const now = new Date().getTime();
+      const now =
+        new Date().getTime();
 
-      const difference = eventDate - now;
+      const difference =
+        eventDate - now;
 
       if (difference <= 0) {
-        document.getElementById("countdown").textContent =
-          "LES OBER'GAMES ONT COMMENCÉ";
+
+        document.getElementById("countdown")
+          .textContent =
+          "LES OBER’GAMES ONT COMMENCÉ";
+
         return;
       }
 
       const days =
-        Math.floor(difference / (1000 * 60 * 60 * 24));
+        Math.floor(
+          difference /
+          (1000 * 60 * 60 * 24)
+        );
 
       const hours =
         Math.floor(
-          (difference / (1000 * 60 * 60)) % 24
+          (difference /
+          (1000 * 60 * 60)) % 24
         );
 
       const minutes =
         Math.floor(
-          (difference / (1000 * 60)) % 60
+          (difference /
+          (1000 * 60)) % 60
         );
 
       const seconds =
@@ -327,12 +453,60 @@
           (difference / 1000) % 60
         );
 
-      document.getElementById("countdown").textContent =
-        `${days}J ${hours}H ${minutes}M ${seconds}S`;
+      document.getElementById("countdown")
+        .textContent =
+        `${days}J ${String(hours).padStart(2,"0")}H ` +
+        `${String(minutes).padStart(2,"0")}M ` +
+        `${String(seconds).padStart(2,"0")}S`;
     }
 
     updateCountdown();
-    setInterval(updateCountdown, 1000);
+
+    setInterval(
+      updateCountdown,
+      1000
+    );
+
+
+    /*
+     * CONNEXION
+     *
+     * La véritable liaison
+     * identifiant → compte Supabase
+     * sera ajoutée juste après.
+     */
+
+    document
+      .getElementById("login-form")
+      .addEventListener(
+        "submit",
+        async function(event) {
+
+          event.preventDefault();
+
+          const message =
+            document.getElementById(
+              "login-message"
+            );
+
+          message.textContent =
+            "VÉRIFICATION DES ACCÈS...";
+
+          /*
+           * Temporairement désactivé.
+           *
+           * Nous allons créer une fonction
+           * sécurisée permettant d'utiliser
+           * "Simon-admin" comme identifiant
+           * au lieu de demander l'adresse e-mail
+           * technique de Supabase.
+           */
+
+          message.textContent =
+            "SYSTÈME D’AUTHENTIFICATION EN PRÉPARATION";
+
+        }
+      );
 
   </script>
 
