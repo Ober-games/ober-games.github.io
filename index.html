@@ -476,39 +476,109 @@
      * sera ajoutée juste après.
      */
 
-    document
-      .getElementById("login-form")
-      .addEventListener(
-        "submit",
-        async function(event) {
+  document.getElementById("login-form").addEventListener("submit", async function(event) {
+  event.preventDefault();
 
-          event.preventDefault();
+  const message = document.getElementById("login-message");
+  const identifier = document.getElementById("identifier").value.trim();
+  const password = document.getElementById("password").value;
 
-          const message =
-            document.getElementById(
-              "login-message"
-            );
+  if (!identifier || !password) {
+    message.textContent = "VEUILLEZ RENSEIGNER TOUS LES CHAMPS";
+    return;
+  }
 
-          message.textContent =
-            "VÉRIFICATION DES ACCÈS...";
+  message.textContent = "VÉRIFICATION DES ACCÈS...";
 
-          /*
-           * Temporairement désactivé.
-           *
-           * Nous allons créer une fonction
-           * sécurisée permettant d'utiliser
-           * "Simon-admin" comme identifiant
-           * au lieu de demander l'adresse e-mail
-           * technique de Supabase.
-           */
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
+          identifier: identifier,
+          password: password
+        })
+      }
+    );
 
-          message.textContent =
-            "SYSTÈME D’AUTHENTIFICATION EN PRÉPARATION";
+    const result = await response.json();
 
-        }
-      );
+    if (!response.ok) {
+      message.textContent =
+        result.error || "ACCÈS REFUSÉ";
+      return;
+    }
 
-  </script>
+    // Création de la session Supabase
+    const { error: sessionError } =
+      await supabaseClient.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token
+      });
 
-</body>
-</html>
+    if (sessionError) {
+      console.error(sessionError);
+      message.textContent = "ERREUR DE SESSION";
+      return;
+    }
+
+    message.textContent = "ACCÈS AUTORISÉ";
+
+    // Animation d'ouverture du coffre
+    document.getElementById("screen").classList.add("unlocking");
+
+    // Pour l'instant, on affiche une page de transition
+    setTimeout(() => {
+      document.body.innerHTML = `
+        <div style="
+          width:100vw;
+          height:100vh;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#050505;
+          color:white;
+          font-family:Arial,Helvetica,sans-serif;
+          text-align:center;
+        ">
+          <div>
+            <div style="
+              font-size:12px;
+              letter-spacing:5px;
+              color:#888;
+              margin-bottom:20px;
+            ">
+              ACCÈS AUTORISÉ
+            </div>
+
+            <div style="
+              font-size:32px;
+              letter-spacing:6px;
+            ">
+              DOSSIER OG
+            </div>
+
+            <div style="
+              margin-top:20px;
+              font-size:11px;
+              letter-spacing:3px;
+              color:#666;
+            ">
+              INITIALISATION DU PROJET...
+            </div>
+          </div>
+        </div>
+      `;
+    }, 1500);
+
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      "IMPOSSIBLE DE CONTACTER LE SYSTÈME";
+  }
+});
