@@ -1,4 +1,806 @@
 <!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+  <title>Projet OG — Ober'Games 2027</title>
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="config.js"></script>
+
+
+
+  <style>
+
+    * {
+
+      box-sizing: border-box;
+
+    }
+
+
+
+    html,
+
+    body {
+
+      margin: 0;
+
+      width: 100%;
+
+      height: 100%;
+
+      overflow: hidden;
+
+      background: #050505;
+
+      font-family: Arial, Helvetica, sans-serif;
+
+      color: #fff;
+
+    }
+
+
+
+    body {
+
+      background-image:
+
+        linear-gradient(
+
+          90deg,
+
+          rgba(0,0,0,.05) 0%,
+
+          rgba(0,0,0,.12) 48%,
+
+          rgba(0,0,0,.78) 100%
+
+        ),
+
+        url("login-vault.jpg");
+
+
+
+      background-size: cover;
+
+      background-position: center;
+
+      background-repeat: no-repeat;
+
+    }
+
+
+
+    .screen {
+
+      width: 100%;
+
+      height: 100%;
+
+      position: relative;
+
+    }
+
+
+
+    /* Ambiance sombre */
+
+    .vignette {
+
+      position: absolute;
+
+      inset: 0;
+
+      pointer-events: none;
+
+      background:
+
+        radial-gradient(
+
+          ellipse at center,
+
+          transparent 35%,
+
+          rgba(0,0,0,.2) 65%,
+
+          rgba(0,0,0,.75) 100%
+
+        );
+
+    }
+
+
+
+    /* Bloc connexion */
+
+    .login-panel {
+
+      position: absolute;
+
+      width: min(430px, 90vw);
+
+      right: 7%;
+
+      top: 50%;
+
+      transform: translateY(-50%);
+
+
+
+      padding: 38px 38px 30px;
+
+
+
+      background:
+
+        linear-gradient(
+
+          145deg,
+
+          rgba(10,12,13,.94),
+
+          rgba(4,5,6,.88)
+
+        );
+
+
+
+      border: 1px solid rgba(210,210,210,.35);
+
+
+
+      box-shadow:
+
+        0 25px 70px rgba(0,0,0,.75),
+
+        inset 0 0 30px rgba(255,255,255,.025);
+
+
+
+      backdrop-filter: blur(5px);
+
+    }
+
+
+
+    .classification {
+
+      text-align: center;
+
+      font-size: 10px;
+
+      letter-spacing: 5px;
+
+      color: #999;
+
+      margin-bottom: 22px;
+
+    }
+
+
+
+    .title {
+
+      text-align: center;
+
+      font-size: 42px;
+
+      letter-spacing: 5px;
+
+      font-weight: 300;
+
+      margin-bottom: 5px;
+
+    }
+
+
+
+    .year {
+
+      text-align: center;
+
+      font-size: 20px;
+
+      letter-spacing: 8px;
+
+      color: #bbb;
+
+      margin-bottom: 30px;
+
+    }
+
+
+
+    .separator {
+
+      width: 80px;
+
+      height: 1px;
+
+      background: #888;
+
+      margin: 0 auto 25px;
+
+    }
+
+
+
+    .access {
+
+      text-align: center;
+
+      font-size: 14px;
+
+      letter-spacing: 4px;
+
+      margin-bottom: 25px;
+
+    }
+
+
+
+    .field {
+
+      margin-bottom: 16px;
+
+    }
+
+
+
+    .field label {
+
+      display: block;
+
+      margin-bottom: 7px;
+
+      font-size: 10px;
+
+      letter-spacing: 3px;
+
+      color: #999;
+
+    }
+
+
+
+    .field input {
+
+      width: 100%;
+
+      height: 50px;
+
+      padding: 0 15px;
+
+
+
+      background: rgba(0,0,0,.55);
+
+      border: 1px solid #555;
+
+
+
+      color: white;
+
+      font-size: 16px;
+
+
+
+      outline: none;
+
+    }
+
+
+
+    .field input:focus {
+
+      border-color: #aaa;
+
+      box-shadow: 0 0 12px rgba(255,255,255,.08);
+
+    }
+
+
+
+    .open-button {
+
+      width: 100%;
+
+      height: 55px;
+
+      margin-top: 10px;
+
+
+
+      border: 1px solid #aaa;
+
+      background: linear-gradient(#e8e8e8, #aaa);
+
+
+
+      color: #111;
+
+
+
+      font-weight: bold;
+
+      font-size: 14px;
+
+      letter-spacing: 3px;
+
+
+
+      cursor: pointer;
+
+
+
+      transition:
+
+        transform .2s,
+
+        filter .2s;
+
+    }
+
+
+
+    .open-button:hover {
+
+      filter: brightness(1.15);
+
+    }
+
+
+
+    .open-button:active {
+
+      transform: scale(.98);
+
+    }
+
+
+
+    .message {
+
+      min-height: 20px;
+
+      margin-top: 15px;
+
+
+
+      text-align: center;
+
+
+
+      font-size: 11px;
+
+      letter-spacing: 2px;
+
+
+
+      color: #aaa;
+
+    }
+
+
+
+    .bottom {
+
+      margin-top: 25px;
+
+      padding-top: 18px;
+
+
+
+      border-top: 1px solid #333;
+
+
+
+      text-align: center;
+
+
+
+      font-size: 9px;
+
+      letter-spacing: 3px;
+
+
+
+      color: #666;
+
+    }
+
+
+
+    .countdown {
+
+      position: absolute;
+
+      left: 4%;
+
+      bottom: 25px;
+
+
+
+      font-size: 11px;
+
+      letter-spacing: 3px;
+
+
+
+      color: rgba(255,255,255,.6);
+
+
+
+      text-shadow: 0 2px 5px #000;
+
+    }
+
+
+
+    /* Animation après connexion */
+
+    .screen.unlocking .login-panel {
+
+      opacity: 0;
+
+      transform: translateY(-50%) translateX(80px);
+
+      transition: 1s ease;
+
+    }
+
+
+
+    .screen.unlocking {
+
+      animation: cinematicFade 1.5s forwards;
+
+    }
+
+
+
+    @keyframes cinematicFade {
+
+      0% {
+
+        filter: brightness(1);
+
+      }
+
+
+
+      100% {
+
+        filter: brightness(.35);
+
+      }
+
+    }
+
+
+
+    /* MOBILE */
+
+    @media (max-width: 700px) {
+
+
+
+      body {
+
+        background-position: 38% center;
+
+      }
+
+
+
+      .login-panel {
+
+        right: 50%;
+
+        top: auto;
+
+        bottom: 25px;
+
+        transform: translateX(50%);
+
+
+
+        width: calc(100% - 30px);
+
+
+
+        padding: 25px 22px 20px;
+
+
+
+        background:
+
+          linear-gradient(
+
+            145deg,
+
+            rgba(5,6,7,.92),
+
+            rgba(3,3,3,.86)
+
+          );
+
+      }
+
+
+
+      .title {
+
+        font-size: 27px;
+
+        letter-spacing: 4px;
+
+      }
+
+
+
+      .year {
+
+        font-size: 15px;
+
+        margin-bottom: 18px;
+
+      }
+
+
+
+      .separator {
+
+        margin-bottom: 18px;
+
+      }
+
+
+
+      .access {
+
+        margin-bottom: 18px;
+
+      }
+
+
+
+      .field {
+
+        margin-bottom: 10px;
+
+      }
+
+
+
+      .field input {
+
+        height: 44px;
+
+      }
+
+
+
+      .open-button {
+
+        height: 48px;
+
+      }
+
+
+
+      .bottom {
+
+        margin-top: 15px;
+
+        padding-top: 12px;
+
+      }
+
+
+
+      .countdown {
+
+        display: none;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+
+<body>
+
+
+
+  <div class="screen" id="screen">
+
+
+
+    <div class="vignette"></div>
+
+
+
+    <div class="login-panel">
+
+
+
+      <div class="classification">
+
+        PROJET OG — DOSSIER SPÉCIAL
+
+      </div>
+
+
+
+      <div class="title">
+
+        OBER’GAMES
+
+      </div>
+
+
+
+      <div class="year">
+
+        2027
+
+      </div>
+
+
+
+      <div class="separator"></div>
+
+
+
+      <div class="access">
+
+        ACCÈS AU DOSSIER
+
+      </div>
+
+
+
+      <form id="login-form">
+
+
+
+        <div class="field">
+
+          <label for="identifier">
+
+            IDENTIFIANT
+
+          </label>
+
+
+
+          <input
+
+            id="identifier"
+
+            type="text"
+
+            placeholder="Votre identifiant"
+
+            autocomplete="username"
+
+            required
+
+          >
+
+        </div>
+
+
+
+        <div class="field">
+
+          <label for="password">
+
+            MOT DE PASSE
+
+          </label>
+
+
+
+          <input
+
+            id="password"
+
+            type="password"
+
+            placeholder="Votre mot de passe"
+
+            autocomplete="current-password"
+
+            required
+
+          >
+
+        </div>
+
+
+
+        <button
+
+          class="open-button"
+
+          type="submit"
+
+        >
+
+          OUVRIR LE COFFRE →
+
+        </button>
+
+
+
+        <div
+
+          class="message"
+
+          id="login-message"
+
+        ></div>
+
+
+
+      </form>
+
+
+
+      <div class="bottom">
+
+        ACCÈS RÉSERVÉ AUX PARTICIPANTS
+
+      </div>
+
+
+
+    </div>
+
+
+
+    <div class="countdown" id="countdown">
+
+      INITIALISATION DU COMPTE À REBOURS...
+
+    </div>
+
+
+
+  </div>
+
+
+
+  <script>
+
+
+
+    /*
+
+     * SUPABASE
+
+     */
+
+
+
+    <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -213,3 +1015,362 @@
 </script>
 </body>
 </html>
+
+
+      );
+
+
+
+
+
+    /*
+
+     * COMPTE À REBOURS
+
+     */
+
+
+
+    const eventDate =
+
+      new Date("2027-06-12T11:00:00+02:00").getTime();
+
+
+
+    function updateCountdown() {
+
+
+
+      const now =
+
+        new Date().getTime();
+
+
+
+      const difference =
+
+        eventDate - now;
+
+
+
+      if (difference <= 0) {
+
+
+
+        document.getElementById("countdown")
+
+          .textContent =
+
+          "LES OBER’GAMES ONT COMMENCÉ";
+
+
+
+        return;
+
+      }
+
+
+
+      const days =
+
+        Math.floor(
+
+          difference /
+
+          (1000 * 60 * 60 * 24)
+
+        );
+
+
+
+      const hours =
+
+        Math.floor(
+
+          (difference /
+
+          (1000 * 60 * 60)) % 24
+
+        );
+
+
+
+      const minutes =
+
+        Math.floor(
+
+          (difference /
+
+          (1000 * 60)) % 60
+
+        );
+
+
+
+      const seconds =
+
+        Math.floor(
+
+          (difference / 1000) % 60
+
+        );
+
+
+
+      document.getElementById("countdown")
+
+        .textContent =
+
+        `${days}J ${String(hours).padStart(2,"0")}H ` +
+
+        `${String(minutes).padStart(2,"0")}M ` +
+
+        `${String(seconds).padStart(2,"0")}S`;
+
+    }
+
+
+
+    updateCountdown();
+
+
+
+    setInterval(
+
+      updateCountdown,
+
+      1000
+
+    );
+
+
+
+
+
+    /*
+
+     * CONNEXION
+
+     *
+
+     * La véritable liaison
+
+     * identifiant → compte Supabase
+
+     * sera ajoutée juste après.
+
+     */
+
+
+
+  document.getElementById("login-form").addEventListener("submit", async function(event) {
+
+  event.preventDefault();
+
+
+
+  const message = document.getElementById("login-message");
+
+  const identifier = document.getElementById("identifier").value.trim();
+
+  const password = document.getElementById("password").value;
+
+
+
+  if (!identifier || !password) {
+
+    message.textContent = "VEUILLEZ RENSEIGNER TOUS LES CHAMPS";
+
+    return;
+
+  }
+
+
+
+  message.textContent = "VÉRIFICATION DES ACCÈS...";
+
+
+
+  try {
+
+    const response = await fetch(
+
+      `${SUPABASE_URL}/functions/v1/login`,
+
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type": "application/json",
+
+          "apikey": SUPABASE_PUBLISHABLE_KEY
+
+        },
+
+        body: JSON.stringify({
+
+          identifier: identifier,
+
+          password: password
+
+        })
+
+      }
+
+    );
+
+
+
+    const result = await response.json();
+
+
+
+    if (!response.ok) {
+
+      message.textContent =
+
+        result.error || "ACCÈS REFUSÉ";
+
+      return;
+
+    }
+
+
+
+    // Création de la session Supabase
+
+    const { error: sessionError } =
+
+      await supabaseClient.auth.setSession({
+
+        access_token: result.access_token,
+
+        refresh_token: result.refresh_token
+
+      });
+
+
+
+    if (sessionError) {
+
+      console.error(sessionError);
+
+      message.textContent = "ERREUR DE SESSION";
+
+      return;
+
+    }
+
+
+
+    message.textContent = "ACCÈS AUTORISÉ";
+
+
+
+    // Animation d'ouverture du coffre
+
+    document.getElementById("screen").classList.add("unlocking");
+
+
+
+    // Pour l'instant, on affiche une page de transition
+
+    setTimeout(() => {
+
+      document.body.innerHTML = `
+
+        <div style="
+
+          width:100vw;
+
+          height:100vh;
+
+          display:flex;
+
+          align-items:center;
+
+          justify-content:center;
+
+          background:#050505;
+
+          color:white;
+
+          font-family:Arial,Helvetica,sans-serif;
+
+          text-align:center;
+
+        ">
+
+          <div>
+
+            <div style="
+
+              font-size:12px;
+
+              letter-spacing:5px;
+
+              color:#888;
+
+              margin-bottom:20px;
+
+            ">
+
+              ACCÈS AUTORISÉ
+
+            </div>
+
+
+
+            <div style="
+
+              font-size:32px;
+
+              letter-spacing:6px;
+
+            ">
+
+              DOSSIER OG
+
+            </div>
+
+
+
+            <div style="
+
+              margin-top:20px;
+
+              font-size:11px;
+
+              letter-spacing:3px;
+
+              color:#666;
+
+            ">
+
+              INITIALISATION DU PROJET...
+
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }, 1500);
+
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    message.textContent =
+
+      "IMPOSSIBLE DE CONTACTER LE SYSTÈME";
+
+  }
+
+});
