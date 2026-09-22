@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projet OG — Système d'accès</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0c;
+    --panel: #14170f;
+    --amber: #e8933a;
+    --amber-dim: #8a6a3a;
+    --denied: #c94f3d;
+    --granted: #7fae6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+  }
+  .og-terminal-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .og-terminal {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    background: var(--panel);
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 32px 28px;
+    color: var(--amber);
+    overflow: hidden;
+  }
+  .og-terminal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+    pointer-events: none;
+  }
+  .og-header {
+    position: relative;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--amber-dim);
+    border-bottom: 1px solid var(--amber-dim);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+  .og-header strong { color: var(--amber); font-size: 14px; }
+  .og-field { position: relative; margin-bottom: 18px; }
+  .og-field label { display: block; font-size: 12px; color: var(--amber-dim); margin-bottom: 6px; }
+  .og-field label::before { content: "> "; }
+  .og-field input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 6px 2px;
+    outline: none;
+  }
+  .og-field input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .og-submit {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .og-submit:hover { background: var(--amber); color: var(--bg); }
+  .og-submit:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .og-submit:disabled { opacity: 0.5; cursor: default; }
+  .og-status {
+    position: relative;
+    margin-top: 18px;
+    font-size: 12px;
+    min-height: 32px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--amber-dim);
+  }
+  .og-status.denied { color: var(--denied); animation: og-shake 0.3s ease; }
+  .og-status.granted { color: var(--granted); }
+  @keyframes og-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .og-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 13px;
+    background: var(--amber);
+    animation: og-blink 1s steps(1) infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+  @keyframes og-blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .og-cursor, .og-status.denied { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="og-terminal-wrap">
+    <div class="og-terminal">
+      <div class="og-header">
+        <strong>PROJET OG</strong> — SYSTÈME D'ACCÈS<br>
+        DOSSIER SPÉCIAL — ACCÈS RÉSERVÉ AUX PARTICIPANTS
+      </div>
+      <form id="og-login-form">
+        <div class="og-field">
+          <label for="og-identifier">IDENTIFIANT</label>
+          <input type="text" id="og-identifier" autocomplete="off" required>
+        </div>
+        <div class="og-field">
+          <label for="og-password">MOT DE PASSE</label>
+          <input type="password" id="og-password" autocomplete="off" required>
+        </div>
+        <button type="submit" class="og-submit">DÉVERROUILLER LE DOSSIER</button>
+      </form>
+      <div id="og-status" class="og-status">EN ATTENTE D'IDENTIFICATION<span class="og-cursor"></span></div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const SUPABASE_URL = "https://mlgzjqrcuwubwgxqgumb.supabase.co/rest/v1/";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_URxO2i1iv3iw-taxs5TcRg_MjFVFYHJ";
+  const FUNCTION_NAME = "login";
+
+  const form = document.getElementById("og-login-form");
+  const statusEl = document.getElementById("og-status");
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function scrambleReveal(finalText) {
+    if (prefersReducedMotion) {
+      statusEl.textContent = finalText;
+      return;
+    }
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
+    const steps = 14;
+    let frame = 0;
+    const timer = setInterval(() => {
+      frame++;
+      const progress = frame / steps;
+      let out = "";
+      for (let i = 0; i < finalText.length; i++) {
+        const c = finalText[i];
+        if (c === "\n" || c === " " || i / finalText.length < progress) {
+          out += c;
+        } else {
+          out += chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+      statusEl.textContent = out;
+      if (frame >= steps) clearInterval(timer);
+    }, 900 / steps);
+  }
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const identifier = document.getElementById("og-identifier").value.trim();
+    const password = document.getElementById("og-password").value;
+
+    statusEl.className = "og-status";
+    statusEl.textContent = "VÉRIFICATION EN COURS...";
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ identifier, password }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        statusEl.className = "og-status denied";
+        statusEl.textContent = "ACCÈS REFUSÉ — " + (result.error || "IDENTIFIANTS INVALIDES");
+        return;
+      }
+
+      statusEl.className = "og-status granted";
+      const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
+      scrambleReveal(label + "\n" + result.reveal);
+      form.querySelectorAll("input, button").forEach(function (el) { el.disabled = true; });
+    } catch (err) {
+      statusEl.className = "og-status denied";
+      statusEl.textContent = "ERREUR DE CONNEXION AU SYSTÈME — RÉESSAIE";
+    }
+  });
+})();
+</script>
+</body>
+</html>
