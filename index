@@ -3,1374 +3,916 @@
 <html lang="fr">
 
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
 
   <title>Projet OG — Ober'Games 2027</title>
 
-
+  <!-- Supabase -->
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- Configuration -->
+
   <script src="config.js"></script>
 
-
-
   <style>
-
     * {
-
       box-sizing: border-box;
-
     }
-
-
 
     html,
-
     body {
-
       margin: 0;
-
       width: 100%;
-
       height: 100%;
-
       overflow: hidden;
-
       background: #050505;
-
       font-family: Arial, Helvetica, sans-serif;
-
       color: #fff;
-
     }
 
-
-
     body {
-
       background-image:
-
         linear-gradient(
-
           90deg,
-
           rgba(0,0,0,.05) 0%,
-
           rgba(0,0,0,.12) 48%,
-
           rgba(0,0,0,.78) 100%
-
         ),
-
         url("login-vault.jpg");
 
-
-
       background-size: cover;
-
       background-position: center;
-
       background-repeat: no-repeat;
-
     }
-
-
 
     .screen {
-
       width: 100%;
-
       height: 100%;
-
       position: relative;
-
     }
 
-
-
-    /* Ambiance sombre */
-
     .vignette {
-
       position: absolute;
-
       inset: 0;
-
       pointer-events: none;
 
       background:
-
         radial-gradient(
-
           ellipse at center,
-
           transparent 35%,
-
           rgba(0,0,0,.2) 65%,
-
           rgba(0,0,0,.75) 100%
-
         );
-
     }
 
-
-
-    /* Bloc connexion */
+    /* =========================
+       PANNEAU DE CONNEXION
+       ========================= */
 
     .login-panel {
-
       position: absolute;
 
       width: min(430px, 90vw);
 
       right: 7%;
-
       top: 50%;
 
       transform: translateY(-50%);
 
-
-
       padding: 38px 38px 30px;
 
-
-
       background:
-
         linear-gradient(
-
           145deg,
-
           rgba(10,12,13,.94),
-
           rgba(4,5,6,.88)
-
         );
-
-
 
       border: 1px solid rgba(210,210,210,.35);
 
-
-
       box-shadow:
-
         0 25px 70px rgba(0,0,0,.75),
-
         inset 0 0 30px rgba(255,255,255,.025);
-
-
 
       backdrop-filter: blur(5px);
 
+      transition:
+        opacity 1s ease,
+        transform 1s ease;
     }
 
-
-
     .classification {
-
       text-align: center;
 
       font-size: 10px;
-
       letter-spacing: 5px;
 
       color: #999;
 
       margin-bottom: 22px;
-
     }
 
-
-
     .title {
-
       text-align: center;
 
       font-size: 42px;
-
       letter-spacing: 5px;
-
       font-weight: 300;
 
       margin-bottom: 5px;
-
     }
 
-
-
     .year {
-
       text-align: center;
 
       font-size: 20px;
-
       letter-spacing: 8px;
 
       color: #bbb;
 
       margin-bottom: 30px;
-
     }
 
-
-
     .separator {
-
       width: 80px;
-
       height: 1px;
 
       background: #888;
 
       margin: 0 auto 25px;
-
     }
 
-
-
     .access {
-
       text-align: center;
 
       font-size: 14px;
-
       letter-spacing: 4px;
 
       margin-bottom: 25px;
-
     }
 
-
+    /* =========================
+       CHAMPS
+       ========================= */
 
     .field {
-
       margin-bottom: 16px;
-
     }
 
-
-
     .field label {
-
       display: block;
 
       margin-bottom: 7px;
 
       font-size: 10px;
-
       letter-spacing: 3px;
 
       color: #999;
-
     }
 
-
-
     .field input {
-
       width: 100%;
-
       height: 50px;
 
       padding: 0 15px;
-
-
 
       background: rgba(0,0,0,.55);
 
       border: 1px solid #555;
 
-
-
       color: white;
 
       font-size: 16px;
 
-
-
       outline: none;
-
     }
-
-
 
     .field input:focus {
-
       border-color: #aaa;
 
-      box-shadow: 0 0 12px rgba(255,255,255,.08);
-
+      box-shadow:
+        0 0 12px rgba(255,255,255,.08);
     }
 
-
+    /* =========================
+       BOUTON
+       ========================= */
 
     .open-button {
-
       width: 100%;
-
       height: 55px;
 
       margin-top: 10px;
 
-
-
       border: 1px solid #aaa;
 
-      background: linear-gradient(#e8e8e8, #aaa);
-
-
+      background:
+        linear-gradient(
+          #e8e8e8,
+          #aaa
+        );
 
       color: #111;
-
-
 
       font-weight: bold;
 
       font-size: 14px;
-
       letter-spacing: 3px;
-
-
 
       cursor: pointer;
 
-
-
       transition:
-
         transform .2s,
-
-        filter .2s;
-
+        filter .2s,
+        opacity .2s;
     }
-
-
 
     .open-button:hover {
-
       filter: brightness(1.15);
-
     }
-
-
 
     .open-button:active {
-
       transform: scale(.98);
-
     }
 
+    .open-button:disabled {
+      opacity: .5;
+      cursor: wait;
+    }
 
+    /* =========================
+       MESSAGE
+       ========================= */
 
     .message {
-
       min-height: 20px;
 
       margin-top: 15px;
 
-
-
       text-align: center;
 
-
-
       font-size: 11px;
-
       letter-spacing: 2px;
 
-
-
       color: #aaa;
-
     }
 
+    .message.error {
+      color: #d66;
+    }
 
+    .message.success {
+      color: #aaa;
+    }
+
+    /* =========================
+       BAS
+       ========================= */
 
     .bottom {
-
       margin-top: 25px;
 
       padding-top: 18px;
 
-
-
       border-top: 1px solid #333;
-
-
 
       text-align: center;
 
-
-
       font-size: 9px;
-
       letter-spacing: 3px;
 
-
-
       color: #666;
-
     }
 
-
+    /* =========================
+       COMPTE À REBOURS
+       ========================= */
 
     .countdown {
-
       position: absolute;
 
       left: 4%;
-
       bottom: 25px;
 
-
-
       font-size: 11px;
-
       letter-spacing: 3px;
-
-
 
       color: rgba(255,255,255,.6);
 
-
-
-      text-shadow: 0 2px 5px #000;
-
+      text-shadow:
+        0 2px 5px #000;
     }
 
-
-
-    /* Animation après connexion */
+    /* =========================
+       ANIMATION CONNEXION
+       ========================= */
 
     .screen.unlocking .login-panel {
-
       opacity: 0;
 
-      transform: translateY(-50%) translateX(80px);
-
-      transition: 1s ease;
-
+      transform:
+        translateY(-50%)
+        translateX(80px);
     }
-
-
 
     .screen.unlocking {
-
-      animation: cinematicFade 1.5s forwards;
-
+      animation:
+        cinematicFade 1.5s forwards;
     }
-
-
 
     @keyframes cinematicFade {
-
       0% {
-
         filter: brightness(1);
-
       }
-
-
 
       100% {
-
         filter: brightness(.35);
-
       }
-
     }
 
-
-
-    /* MOBILE */
+    /* =========================
+       MOBILE
+       ========================= */
 
     @media (max-width: 700px) {
 
-
-
       body {
-
         background-position: 38% center;
-
       }
 
-
-
       .login-panel {
-
         right: 50%;
 
         top: auto;
-
         bottom: 25px;
 
-        transform: translateX(50%);
+        transform:
+          translateX(50%);
 
+        width:
+          calc(100% - 30px);
 
-
-        width: calc(100% - 30px);
-
-
-
-        padding: 25px 22px 20px;
-
-
+        padding:
+          25px 22px 20px;
 
         background:
-
           linear-gradient(
-
             145deg,
-
             rgba(5,6,7,.92),
-
             rgba(3,3,3,.86)
-
           );
-
       }
-
-
 
       .title {
-
         font-size: 27px;
-
         letter-spacing: 4px;
-
       }
-
-
 
       .year {
-
         font-size: 15px;
-
         margin-bottom: 18px;
-
       }
-
-
 
       .separator {
-
         margin-bottom: 18px;
-
       }
-
-
 
       .access {
-
         margin-bottom: 18px;
-
       }
-
-
 
       .field {
-
         margin-bottom: 10px;
-
       }
-
-
 
       .field input {
-
         height: 44px;
-
       }
-
-
 
       .open-button {
-
         height: 48px;
-
       }
-
-
 
       .bottom {
-
         margin-top: 15px;
-
         padding-top: 12px;
-
       }
-
-
 
       .countdown {
-
         display: none;
-
       }
-
     }
-
   </style>
 
 </head>
 
-
-
 <body>
-
-
 
   <div class="screen" id="screen">
 
+```
+<div class="vignette"></div>
 
+<div class="login-panel">
 
-    <div class="vignette"></div>
-
-
-
-    <div class="login-panel">
-
-
-
-      <div class="classification">
-
-        PROJET OG — DOSSIER SPÉCIAL
-
-      </div>
-
-
-
-      <div class="title">
-
-        OBER’GAMES
-
-      </div>
-
-
-
-      <div class="year">
-
-        2027
-
-      </div>
-
-
-
-      <div class="separator"></div>
-
-
-
-      <div class="access">
-
-        ACCÈS AU DOSSIER
-
-      </div>
-
-
-
-      <form id="login-form">
-
-
-
-        <div class="field">
-
-          <label for="identifier">
-
-            IDENTIFIANT
-
-          </label>
-
-
-
-          <input
-
-            id="identifier"
-
-            type="text"
-
-            placeholder="Votre identifiant"
-
-            autocomplete="username"
-
-            required
-
-          >
-
-        </div>
-
-
-
-        <div class="field">
-
-          <label for="password">
-
-            MOT DE PASSE
-
-          </label>
-
-
-
-          <input
-
-            id="password"
-
-            type="password"
-
-            placeholder="Votre mot de passe"
-
-            autocomplete="current-password"
-
-            required
-
-          >
-
-        </div>
-
-
-
-        <button
-
-          class="open-button"
-
-          type="submit"
-
-        >
-
-          OUVRIR LE COFFRE →
-
-        </button>
-
-
-
-        <div
-
-          class="message"
-
-          id="login-message"
-
-        ></div>
-
-
-
-      </form>
-
-
-
-      <div class="bottom">
-
-        ACCÈS RÉSERVÉ AUX PARTICIPANTS
-
-      </div>
-
-
-
-    </div>
-
-
-
-    <div class="countdown" id="countdown">
-
-      INITIALISATION DU COMPTE À REBOURS...
-
-    </div>
-
-
-
+  <div class="classification">
+    PROJET OG — DOSSIER SPÉCIAL
   </div>
 
+  <div class="title">
+    OBER’GAMES
+  </div>
 
+  <div class="year">
+    2027
+  </div>
+
+  <div class="separator"></div>
+
+  <div class="access">
+    ACCÈS AU DOSSIER
+  </div>
+
+  <form id="login-form">
+
+    <div class="field">
+
+      <label for="identifier">
+        IDENTIFIANT
+      </label>
+
+      <input
+        id="identifier"
+        type="text"
+        placeholder="Votre identifiant"
+        autocomplete="username"
+        required
+      >
+
+    </div>
+
+    <div class="field">
+
+      <label for="password">
+        MOT DE PASSE
+      </label>
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Votre mot de passe"
+        autocomplete="current-password"
+        required
+      >
+
+    </div>
+
+    <button
+      class="open-button"
+      id="login-button"
+      type="submit"
+    >
+      OUVRIR LE COFFRE →
+    </button>
+
+    <div
+      class="message"
+      id="login-message"
+    ></div>
+
+  </form>
+
+  <div class="bottom">
+    ACCÈS RÉSERVÉ AUX PARTICIPANTS
+  </div>
+
+</div>
+
+<div
+  class="countdown"
+  id="countdown"
+>
+  INITIALISATION DU COMPTE À REBOURS...
+</div>
+```
+
+  </div>
 
   <script>
 
-
+    /* =====================================================
+       SUPABASE
+       ===================================================== */
 
     /*
-
-     * SUPABASE
-
+     * config.js doit contenir :
+     *
+     * const SUPABASE_URL = "https://xxxxxxxx.supabase.co";
+     *
+     * const SUPABASE_PUBLISHABLE_KEY =
+     * "sb_publishable_xxxxxxxxx";
+     *
      */
 
-
-
-    <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projet OG — Système d'accès</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0d0f0c;
-    --panel: #14170f;
-    --amber: #e8933a;
-    --amber-dim: #8a6a3a;
-    --denied: #c94f3d;
-    --granted: #7fae6a;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    font-family: "IBM Plex Mono", "Courier New", monospace;
-  }
-  .og-terminal-wrap {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-  .og-terminal {
-    position: relative;
-    width: 100%;
-    max-width: 460px;
-    background: var(--panel);
-    border: 1px solid var(--amber-dim);
-    border-radius: 4px;
-    padding: 32px 28px;
-    color: var(--amber);
-    overflow: hidden;
-  }
-  .og-terminal::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
-    pointer-events: none;
-  }
-  .og-header {
-    position: relative;
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    color: var(--amber-dim);
-    border-bottom: 1px solid var(--amber-dim);
-    padding-bottom: 12px;
-    margin-bottom: 24px;
-    line-height: 1.6;
-  }
-  .og-header strong { color: var(--amber); font-size: 14px; }
-  .og-field { position: relative; margin-bottom: 18px; }
-  .og-field label { display: block; font-size: 12px; color: var(--amber-dim); margin-bottom: 6px; }
-  .og-field label::before { content: "> "; }
-  .og-field input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--amber-dim);
-    color: var(--amber);
-    font-family: inherit;
-    font-size: 15px;
-    padding: 6px 2px;
-    outline: none;
-  }
-  .og-field input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-  .og-submit {
-    position: relative;
-    width: 100%;
-    margin-top: 8px;
-    background: transparent;
-    border: 1px solid var(--amber);
-    color: var(--amber);
-    font-family: inherit;
-    font-size: 13px;
-    letter-spacing: 0.06em;
-    padding: 12px;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-  .og-submit:hover { background: var(--amber); color: var(--bg); }
-  .og-submit:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-  .og-submit:disabled { opacity: 0.5; cursor: default; }
-  .og-status {
-    position: relative;
-    margin-top: 18px;
-    font-size: 12px;
-    min-height: 32px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    color: var(--amber-dim);
-  }
-  .og-status.denied { color: var(--denied); animation: og-shake 0.3s ease; }
-  .og-status.granted { color: var(--granted); }
-  @keyframes og-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-  .og-cursor {
-    display: inline-block;
-    width: 8px;
-    height: 13px;
-    background: var(--amber);
-    animation: og-blink 1s steps(1) infinite;
-    vertical-align: text-bottom;
-    margin-left: 2px;
-  }
-  @keyframes og-blink { 50% { opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) {
-    .og-cursor, .og-status.denied { animation: none; }
-  }
-</style>
-</head>
-<body>
-  <div class="og-terminal-wrap">
-    <div class="og-terminal">
-      <div class="og-header">
-        <strong>PROJET OG</strong> — SYSTÈME D'ACCÈS<br>
-        DOSSIER SPÉCIAL — ACCÈS RÉSERVÉ AUX PARTICIPANTS
-      </div>
-      <form id="og-login-form">
-        <div class="og-field">
-          <label for="og-identifier">IDENTIFIANT</label>
-          <input type="text" id="og-identifier" autocomplete="off" required>
-        </div>
-        <div class="og-field">
-          <label for="og-password">MOT DE PASSE</label>
-          <input type="password" id="og-password" autocomplete="off" required>
-        </div>
-        <button type="submit" class="og-submit">DÉVERROUILLER LE DOSSIER</button>
-      </form>
-      <div id="og-status" class="og-status">EN ATTENTE D'IDENTIFICATION<span class="og-cursor"></span></div>
-    </div>
-  </div>
-
-<script>
-(function () {
-  const SUPABASE_URL = "https://mlgzjqrcuwubwgxqgumb.supabase.co/rest/v1/";
-  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_URxO2i1iv3iw-taxs5TcRg_MjFVFYHJ";
-  const FUNCTION_NAME = "login";
-
-  const form = document.getElementById("og-login-form");
-  const statusEl = document.getElementById("og-status");
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  function scrambleReveal(finalText) {
-    if (prefersReducedMotion) {
-      statusEl.textContent = finalText;
-      return;
-    }
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
-    const steps = 14;
-    let frame = 0;
-    const timer = setInterval(() => {
-      frame++;
-      const progress = frame / steps;
-      let out = "";
-      for (let i = 0; i < finalText.length; i++) {
-        const c = finalText[i];
-        if (c === "\n" || c === " " || i / finalText.length < progress) {
-          out += c;
-        } else {
-          out += chars[Math.floor(Math.random() * chars.length)];
-        }
-      }
-      statusEl.textContent = out;
-      if (frame >= steps) clearInterval(timer);
-    }, 900 / steps);
-  }
-
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const identifier = document.getElementById("og-identifier").value.trim();
-    const password = document.getElementById("og-password").value;
-
-    statusEl.className = "og-status";
-    statusEl.textContent = "VÉRIFICATION EN COURS...";
-
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ identifier, password }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        statusEl.className = "og-status denied";
-        statusEl.textContent = "ACCÈS REFUSÉ — " + (result.error || "IDENTIFIANTS INVALIDES");
-        return;
-      }
-
-      statusEl.className = "og-status granted";
-      const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
-      scrambleReveal(label + "\n" + result.reveal);
-      form.querySelectorAll("input, button").forEach(function (el) { el.disabled = true; });
-    } catch (err) {
-      statusEl.className = "og-status denied";
-      statusEl.textContent = "ERREUR DE CONNEXION AU SYSTÈME — RÉESSAIE";
-    }
-  });
-})();
-</script>
-</body>
-</html>
-
-
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
       );
 
 
-
-
-
-    /*
-
-     * COMPTE À REBOURS
-
-     */
-
-
+    /* =====================================================
+       COMPTE À REBOURS
+       ===================================================== */
 
     const eventDate =
-
-      new Date("2027-06-12T11:00:00+02:00").getTime();
-
+      new Date(
+        "2027-06-12T11:00:00+02:00"
+      ).getTime();
 
 
     function updateCountdown() {
 
-
-
       const now =
-
         new Date().getTime();
 
-
-
       const difference =
-
         eventDate - now;
 
+
+      const countdown =
+        document.getElementById(
+          "countdown"
+        );
 
 
       if (difference <= 0) {
 
-
-
-        document.getElementById("countdown")
-
-          .textContent =
-
+        countdown.textContent =
           "LES OBER’GAMES ONT COMMENCÉ";
 
-
-
         return;
-
       }
 
 
-
       const days =
-
         Math.floor(
-
           difference /
-
           (1000 * 60 * 60 * 24)
-
         );
-
 
 
       const hours =
-
         Math.floor(
-
           (difference /
-
           (1000 * 60 * 60)) % 24
-
         );
-
 
 
       const minutes =
-
         Math.floor(
-
           (difference /
-
           (1000 * 60)) % 60
-
         );
-
 
 
       const seconds =
-
         Math.floor(
-
           (difference / 1000) % 60
-
         );
 
 
-
-      document.getElementById("countdown")
-
-        .textContent =
-
-        `${days}J ${String(hours).padStart(2,"0")}H ` +
-
-        `${String(minutes).padStart(2,"0")}M ` +
-
-        `${String(seconds).padStart(2,"0")}S`;
-
+      countdown.textContent =
+        `${days}J ` +
+        `${String(hours).padStart(2, "0")}H ` +
+        `${String(minutes).padStart(2, "0")}M ` +
+        `${String(seconds).padStart(2, "0")}S`;
     }
-
 
 
     updateCountdown();
 
-
-
     setInterval(
-
       updateCountdown,
-
       1000
-
     );
 
 
+    /* =====================================================
+       CONNEXION
+       ===================================================== */
 
+    document
+      .getElementById("login-form")
+      .addEventListener(
+        "submit",
+        async function(event) {
 
+          event.preventDefault();
 
-    /*
 
-     * CONNEXION
+          const message =
+            document.getElementById(
+              "login-message"
+            );
 
-     *
+          const button =
+            document.getElementById(
+              "login-button"
+            );
 
-     * La véritable liaison
 
-     * identifiant → compte Supabase
+          const identifier =
+            document
+              .getElementById("identifier")
+              .value
+              .trim();
 
-     * sera ajoutée juste après.
 
-     */
+          const password =
+            document
+              .getElementById("password")
+              .value;
 
 
+          if (!identifier || !password) {
 
-  document.getElementById("login-form").addEventListener("submit", async function(event) {
+            message.className =
+              "message error";
 
-  event.preventDefault();
+            message.textContent =
+              "VEUILLEZ RENSEIGNER TOUS LES CHAMPS";
 
+            return;
+          }
 
 
-  const message = document.getElementById("login-message");
+          /*
+           * État de chargement
+           */
 
-  const identifier = document.getElementById("identifier").value.trim();
+          button.disabled = true;
 
-  const password = document.getElementById("password").value;
+          message.className =
+            "message";
 
+          message.textContent =
+            "VÉRIFICATION DES ACCÈS...";
 
 
-  if (!identifier || !password) {
+          try {
 
-    message.textContent = "VEUILLEZ RENSEIGNER TOUS LES CHAMPS";
+            /*
+             * Appel de l'Edge Function
+             *
+             * IMPORTANT :
+             * SUPABASE_URL ne doit PAS contenir
+             * /rest/v1/
+             */
 
-    return;
+            const response =
+              await fetch(
+                `${SUPABASE_URL}/functions/v1/login`,
+                {
+                  method: "POST",
 
-  }
+                  headers: {
+                    "Content-Type":
+                      "application/json",
 
+                    "apikey":
+                      SUPABASE_PUBLISHABLE_KEY,
 
+                    "Authorization":
+                      `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+                  },
 
-  message.textContent = "VÉRIFICATION DES ACCÈS...";
+                  body:
+                    JSON.stringify({
+                      identifier:
+                        identifier,
 
+                      password:
+                        password
+                    })
+                }
+              );
 
 
-  try {
+            /*
+             * Lecture de la réponse
+             */
 
-    const response = await fetch(
+            let result;
 
-      `${SUPABASE_URL}/functions/v1/login`,
+            try {
 
-      {
+              result =
+                await response.json();
 
-        method: "POST",
+            } catch {
 
-        headers: {
+              result = {};
 
-          "Content-Type": "application/json",
+            }
 
-          "apikey": SUPABASE_PUBLISHABLE_KEY
 
-        },
+            /*
+             * Erreur renvoyée par la fonction
+             */
 
-        body: JSON.stringify({
+            if (!response.ok) {
 
-          identifier: identifier,
+              console.error(
+                "Erreur login :",
+                result
+              );
 
-          password: password
+              message.className =
+                "message error";
 
-        })
+              message.textContent =
+                result.error ||
+                "ACCÈS REFUSÉ";
 
-      }
+              button.disabled = false;
 
-    );
+              return;
+            }
 
 
+            /*
+             * Vérification des tokens
+             */
 
-    const result = await response.json();
+            if (
+              !result.access_token ||
+              !result.refresh_token
+            ) {
 
+              console.error(
+                "Réponse inattendue :",
+                result
+              );
 
+              message.className =
+                "message error";
 
-    if (!response.ok) {
+              message.textContent =
+                "RÉPONSE DU SYSTÈME INVALIDE";
 
-      message.textContent =
+              button.disabled = false;
 
-        result.error || "ACCÈS REFUSÉ";
+              return;
+            }
 
-      return;
 
-    }
+            /*
+             * Création de la session Supabase
+             */
 
+            const {
+              error: sessionError
+            } =
+              await supabaseClient.auth.setSession({
 
+                access_token:
+                  result.access_token,
 
-    // Création de la session Supabase
+                refresh_token:
+                  result.refresh_token
 
-    const { error: sessionError } =
+              });
 
-      await supabaseClient.auth.setSession({
 
-        access_token: result.access_token,
+            if (sessionError) {
 
-        refresh_token: result.refresh_token
+              console.error(
+                "Erreur session :",
+                sessionError
+              );
 
-      });
+              message.className =
+                "message error";
 
+              message.textContent =
+                "ERREUR DE SESSION";
 
+              button.disabled = false;
 
-    if (sessionError) {
+              return;
+            }
 
-      console.error(sessionError);
 
-      message.textContent = "ERREUR DE SESSION";
+            /*
+             * Connexion réussie
+             */
 
-      return;
+            message.className =
+              "message success";
 
-    }
+            message.textContent =
+              "ACCÈS AUTORISÉ";
 
 
+            /*
+             * Animation du coffre
+             */
 
-    message.textContent = "ACCÈS AUTORISÉ";
+            document
+              .getElementById("screen")
+              .classList
+              .add("unlocking");
 
 
+            /*
+             * Transition vers la page suivante
+             */
 
-    // Animation d'ouverture du coffre
+            setTimeout(
+              function() {
 
-    document.getElementById("screen").classList.add("unlocking");
+                document.body.innerHTML = `
 
+                  <div style="
+                    width:100vw;
+                    height:100vh;
 
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
 
-    // Pour l'instant, on affiche une page de transition
+                    background:#050505;
 
-    setTimeout(() => {
+                    color:white;
 
-      document.body.innerHTML = `
+                    font-family:
+                      Arial,
+                      Helvetica,
+                      sans-serif;
 
-        <div style="
+                    text-align:center;
+                  ">
 
-          width:100vw;
+                    <div>
 
-          height:100vh;
+                      <div style="
+                        font-size:12px;
+                        letter-spacing:5px;
+                        color:#888;
+                        margin-bottom:20px;
+                      ">
+                        ACCÈS AUTORISÉ
+                      </div>
 
-          display:flex;
+                      <div style="
+                        font-size:32px;
+                        letter-spacing:6px;
+                      ">
+                        DOSSIER OG
+                      </div>
 
-          align-items:center;
+                      <div style="
+                        margin-top:20px;
+                        font-size:11px;
+                        letter-spacing:3px;
+                        color:#666;
+                      ">
+                        INITIALISATION DU PROJET...
+                      </div>
 
-          justify-content:center;
+                    </div>
 
-          background:#050505;
+                  </div>
 
-          color:white;
+                `;
 
-          font-family:Arial,Helvetica,sans-serif;
+              },
+              1500
+            );
 
-          text-align:center;
+          } catch (error) {
 
-        ">
+            console.error(
+              "Erreur réseau :",
+              error
+            );
 
-          <div>
+            message.className =
+              "message error";
 
-            <div style="
+            message.textContent =
+              "IMPOSSIBLE DE CONTACTER LE SYSTÈME";
 
-              font-size:12px;
+            button.disabled = false;
+          }
 
-              letter-spacing:5px;
+        }
+      );
 
-              color:#888;
+  </script>
 
-              margin-bottom:20px;
-
-            ">
-
-              ACCÈS AUTORISÉ
-
-            </div>
-
-
-
-            <div style="
-
-              font-size:32px;
-
-              letter-spacing:6px;
-
-            ">
-
-              DOSSIER OG
-
-            </div>
-
-
-
-            <div style="
-
-              margin-top:20px;
-
-              font-size:11px;
-
-              letter-spacing:3px;
-
-              color:#666;
-
-            ">
-
-              INITIALISATION DU PROJET...
-
-            </div>
-
-          </div>
-
-        </div>
-
-      `;
-
-    }, 1500);
-
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    message.textContent =
-
-      "IMPOSSIBLE DE CONTACTER LE SYSTÈME";
-
-  }
-
-});
+</body>
+</html>
