@@ -1,918 +1,775 @@
 <!DOCTYPE html>
-
 <html lang="fr">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Projet OG — Ober'Games 2027</title>
-
-  <!-- Supabase -->
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Configuration -->
-
-  <script src="config.js"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #050505;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #fff;
-    }
-
-    body {
-      background-image:
-        linear-gradient(
-          90deg,
-          rgba(0,0,0,.05) 0%,
-          rgba(0,0,0,.12) 48%,
-          rgba(0,0,0,.78) 100%
-        ),
-        url("login-vault.jpg");
-
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-
-    .screen {
-      width: 100%;
-      height: 100%;
-      position: relative;
-    }
-
-    .vignette {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-
-      background:
-        radial-gradient(
-          ellipse at center,
-          transparent 35%,
-          rgba(0,0,0,.2) 65%,
-          rgba(0,0,0,.75) 100%
-        );
-    }
-
-    /* =========================
-       PANNEAU DE CONNEXION
-       ========================= */
-
-    .login-panel {
-      position: absolute;
-
-      width: min(430px, 90vw);
-
-      right: 7%;
-      top: 50%;
-
-      transform: translateY(-50%);
-
-      padding: 38px 38px 30px;
-
-      background:
-        linear-gradient(
-          145deg,
-          rgba(10,12,13,.94),
-          rgba(4,5,6,.88)
-        );
-
-      border: 1px solid rgba(210,210,210,.35);
-
-      box-shadow:
-        0 25px 70px rgba(0,0,0,.75),
-        inset 0 0 30px rgba(255,255,255,.025);
-
-      backdrop-filter: blur(5px);
-
-      transition:
-        opacity 1s ease,
-        transform 1s ease;
-    }
-
-    .classification {
-      text-align: center;
-
-      font-size: 10px;
-      letter-spacing: 5px;
-
-      color: #999;
-
-      margin-bottom: 22px;
-    }
-
-    .title {
-      text-align: center;
-
-      font-size: 42px;
-      letter-spacing: 5px;
-      font-weight: 300;
-
-      margin-bottom: 5px;
-    }
-
-    .year {
-      text-align: center;
-
-      font-size: 20px;
-      letter-spacing: 8px;
-
-      color: #bbb;
-
-      margin-bottom: 30px;
-    }
-
-    .separator {
-      width: 80px;
-      height: 1px;
-
-      background: #888;
-
-      margin: 0 auto 25px;
-    }
-
-    .access {
-      text-align: center;
-
-      font-size: 14px;
-      letter-spacing: 4px;
-
-      margin-bottom: 25px;
-    }
-
-    /* =========================
-       CHAMPS
-       ========================= */
-
-    .field {
-      margin-bottom: 16px;
-    }
-
-    .field label {
-      display: block;
-
-      margin-bottom: 7px;
-
-      font-size: 10px;
-      letter-spacing: 3px;
-
-      color: #999;
-    }
-
-    .field input {
-      width: 100%;
-      height: 50px;
-
-      padding: 0 15px;
-
-      background: rgba(0,0,0,.55);
-
-      border: 1px solid #555;
-
-      color: white;
-
-      font-size: 16px;
-
-      outline: none;
-    }
-
-    .field input:focus {
-      border-color: #aaa;
-
-      box-shadow:
-        0 0 12px rgba(255,255,255,.08);
-    }
-
-    /* =========================
-       BOUTON
-       ========================= */
-
-    .open-button {
-      width: 100%;
-      height: 55px;
-
-      margin-top: 10px;
-
-      border: 1px solid #aaa;
-
-      background:
-        linear-gradient(
-          #e8e8e8,
-          #aaa
-        );
-
-      color: #111;
-
-      font-weight: bold;
-
-      font-size: 14px;
-      letter-spacing: 3px;
-
-      cursor: pointer;
-
-      transition:
-        transform .2s,
-        filter .2s,
-        opacity .2s;
-    }
-
-    .open-button:hover {
-      filter: brightness(1.15);
-    }
-
-    .open-button:active {
-      transform: scale(.98);
-    }
-
-    .open-button:disabled {
-      opacity: .5;
-      cursor: wait;
-    }
-
-    /* =========================
-       MESSAGE
-       ========================= */
-
-    .message {
-      min-height: 20px;
-
-      margin-top: 15px;
-
-      text-align: center;
-
-      font-size: 11px;
-      letter-spacing: 2px;
-
-      color: #aaa;
-    }
-
-    .message.error {
-      color: #d66;
-    }
-
-    .message.success {
-      color: #aaa;
-    }
-
-    /* =========================
-       BAS
-       ========================= */
-
-    .bottom {
-      margin-top: 25px;
-
-      padding-top: 18px;
-
-      border-top: 1px solid #333;
-
-      text-align: center;
-
-      font-size: 9px;
-      letter-spacing: 3px;
-
-      color: #666;
-    }
-
-    /* =========================
-       COMPTE À REBOURS
-       ========================= */
-
-    .countdown {
-      position: absolute;
-
-      left: 4%;
-      bottom: 25px;
-
-      font-size: 11px;
-      letter-spacing: 3px;
-
-      color: rgba(255,255,255,.6);
-
-      text-shadow:
-        0 2px 5px #000;
-    }
-
-    /* =========================
-       ANIMATION CONNEXION
-       ========================= */
-
-    .screen.unlocking .login-panel {
-      opacity: 0;
-
-      transform:
-        translateY(-50%)
-        translateX(80px);
-    }
-
-    .screen.unlocking {
-      animation:
-        cinematicFade 1.5s forwards;
-    }
-
-    @keyframes cinematicFade {
-      0% {
-        filter: brightness(1);
-      }
-
-      100% {
-        filter: brightness(.35);
-      }
-    }
-
-    /* =========================
-       MOBILE
-       ========================= */
-
-    @media (max-width: 700px) {
-
-      body {
-        background-position: 38% center;
-      }
-
-      .login-panel {
-        right: 50%;
-
-        top: auto;
-        bottom: 25px;
-
-        transform:
-          translateX(50%);
-
-        width:
-          calc(100% - 30px);
-
-        padding:
-          25px 22px 20px;
-
-        background:
-          linear-gradient(
-            145deg,
-            rgba(5,6,7,.92),
-            rgba(3,3,3,.86)
-          );
-      }
-
-      .title {
-        font-size: 27px;
-        letter-spacing: 4px;
-      }
-
-      .year {
-        font-size: 15px;
-        margin-bottom: 18px;
-      }
-
-      .separator {
-        margin-bottom: 18px;
-      }
-
-      .access {
-        margin-bottom: 18px;
-      }
-
-      .field {
-        margin-bottom: 10px;
-      }
-
-      .field input {
-        height: 44px;
-      }
-
-      .open-button {
-        height: 48px;
-      }
-
-      .bottom {
-        margin-top: 15px;
-        padding-top: 12px;
-      }
-
-      .countdown {
-        display: none;
-      }
-    }
-  </style>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projet OG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0c;
+    --panel: #14170f;
+    --amber: #e8933a;
+    --amber-dim: #8a6a3a;
+    --denied: #c94f3d;
+    --granted: #7fae6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+  }
+
+  .og-terminal-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 48px 20px;
+  }
+
+  .og-page-title {
+    font-size: 34px;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    text-align: center;
+    margin: 0 0 28px;
+    text-shadow: 0 0 16px rgba(232, 147, 58, 0.35);
+  }
+
+  .og-terminal {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    background: var(--panel);
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 32px 28px;
+    color: var(--amber);
+    overflow: hidden;
+  }
+  .og-terminal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+    pointer-events: none;
+  }
+
+  .og-field { position: relative; margin-bottom: 18px; }
+  .og-field label { display: block; font-size: 12px; color: var(--amber-dim); margin-bottom: 6px; }
+  .og-field label::before { content: "> "; }
+  .og-field input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 6px 2px;
+    outline: none;
+  }
+  .og-field input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+  .og-submit {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .og-submit:hover { background: var(--amber); color: var(--bg); }
+  .og-submit:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .og-submit:disabled { opacity: 0.5; cursor: default; }
+
+  .og-status {
+    position: relative;
+    margin-top: 18px;
+    font-size: 12px;
+    min-height: 32px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--amber-dim);
+  }
+  .og-status.denied { color: var(--denied); animation: og-shake 0.3s ease; }
+  .og-status.granted { color: var(--granted); }
+  @keyframes og-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  .og-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 13px;
+    background: var(--amber);
+    animation: og-blink 1s steps(1) infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+  @keyframes og-blink { 50% { opacity: 0; } }
+
+  /* Countdown */
+  .og-countdown-wrap {
+    width: 100%;
+    max-width: 460px;
+    margin-top: 28px;
+    text-align: center;
+  }
+  .og-countdown-label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--amber-dim);
+    margin-bottom: 10px;
+  }
+  .og-countdown-grid {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .og-countdown-block {
+    background: var(--panel);
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 10px 14px;
+    min-width: 56px;
+  }
+  .og-countdown-block span {
+    display: block;
+    font-size: 22px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+  .og-countdown-block small {
+    display: block;
+    font-size: 9px;
+    color: var(--amber-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  /* Dashboard (post-login "real page") */
+  .og-dashboard { display: none; width: 100%; max-width: 640px; color: var(--amber); }
+  .og-dashboard-header {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--amber-dim);
+    border-bottom: 1px solid var(--amber-dim);
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+  }
+  .og-dashboard-header strong { color: var(--amber); }
+  .og-dashboard-reveal { font-size: 12px; color: var(--amber-dim); margin-bottom: 24px; }
+
+  .og-section { margin-bottom: 32px; }
+  .og-section-title {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin: 0 0 12px;
+    border-bottom: 1px solid var(--amber-dim);
+    padding-bottom: 8px;
+  }
+
+  .og-item {
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .og-item-hidden { opacity: 0.55; border-style: dashed; }
+  .og-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .og-item-desc { color: var(--amber-dim); margin-top: 4px; font-size: 12px; line-height: 1.5; }
+  .og-badge {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--denied);
+    border: 1px solid var(--denied);
+    border-radius: 3px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+  .og-badge-role { color: var(--amber-dim); border-color: var(--amber-dim); }
+
+  .og-item-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .og-btn-small {
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .og-btn-small:hover { border-color: var(--amber); }
+  .og-btn-danger { border-color: var(--denied); color: var(--denied); }
+  .og-btn-danger:hover { background: var(--denied); color: var(--bg); }
+
+  .og-admin-only { display: none; }
+  .og-dashboard.og-is-admin .og-admin-only { display: block; }
+
+  .og-form {
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .og-form-title { font-size: 12px; margin-bottom: 10px; color: var(--amber-dim); }
+  .og-form label { display: block; font-size: 11px; color: var(--amber-dim); margin: 10px 0 4px; }
+  .og-form input, .og-form textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--amber-dim);
+    border-radius: 3px;
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px;
+  }
+  .og-form textarea { min-height: 60px; resize: vertical; }
+  .og-form input:focus-visible, .og-form textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .og-form-buttons { display: flex; gap: 8px; margin-top: 12px; }
+  .og-form-buttons .og-submit { margin-top: 0; }
+
+  .og-empty { color: var(--amber-dim); font-size: 12px; font-style: italic; }
+
+  /* Vault opening animation */
+  .og-vault-overlay { display: none; }
+  .og-vault-door {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background: radial-gradient(circle at center, #1a1d14 0%, var(--panel) 70%);
+    transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1);
+    z-index: 100;
+  }
+  .og-vault-door-left { left: 0; border-right: 2px solid var(--amber-dim); }
+  .og-vault-door-right { right: 0; border-left: 2px solid var(--amber-dim); }
+  .og-vault-door::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--amber-dim);
+    transform: translateY(-50%);
+  }
+  .og-vault-door-left::after { right: -8px; }
+  .og-vault-door-right::after { left: -8px; }
+  .og-vault-door-left.og-vault-open { transform: translateX(-100%); }
+  .og-vault-door-right.og-vault-open { transform: translateX(100%); }
+
+  .og-vault-dial {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 84px;
+    height: 84px;
+    margin: -42px 0 0 -42px;
+    z-index: 101;
+    transition: opacity 0.5s ease;
+  }
+  .og-vault-dial.og-vault-spin svg { animation: og-dial-spin 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+  .og-vault-dial.og-vault-fade { opacity: 0; }
+  @keyframes og-dial-spin { from { transform: rotate(0deg); } to { transform: rotate(520deg); } }
+  .og-dial-ring, .og-dial-hand-long, .og-dial-hand-short { stroke: var(--amber); }
+  .og-dial-center { fill: var(--amber); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .og-cursor, .og-status.denied { animation: none; }
+    .og-vault-dial.og-vault-spin svg { animation: none; }
+  }
+
+  @media (max-width: 480px) {
+    .og-page-title { font-size: 26px; }
+    .og-countdown-block { min-width: 46px; padding: 8px 10px; }
+    .og-countdown-block span { font-size: 18px; }
+  }
+</style>
 </head>
-
 <body>
 
-  <div class="screen" id="screen">
+  <div class="og-terminal-wrap">
+    <h1 class="og-page-title">PROJET OG</h1>
 
-```
-<div class="vignette"></div>
-
-<div class="login-panel">
-
-  <div class="classification">
-    PROJET OG — DOSSIER SPÉCIAL
-  </div>
-
-  <div class="title">
-    OBER’GAMES
-  </div>
-
-  <div class="year">
-    2027
-  </div>
-
-  <div class="separator"></div>
-
-  <div class="access">
-    ACCÈS AU DOSSIER
-  </div>
-
-  <form id="login-form">
-
-    <div class="field">
-
-      <label for="identifier">
-        IDENTIFIANT
-      </label>
-
-      <input
-        id="identifier"
-        type="text"
-        placeholder="Votre identifiant"
-        autocomplete="username"
-        required
-      >
-
+    <div class="og-terminal">
+      <form id="og-login-form">
+        <div class="og-field">
+          <label for="og-identifier">IDENTIFIANT</label>
+          <input type="text" id="og-identifier" autocomplete="off" required>
+        </div>
+        <div class="og-field">
+          <label for="og-password">MOT DE PASSE</label>
+          <input type="password" id="og-password" autocomplete="off" required>
+        </div>
+        <button type="submit" class="og-submit">DÉVERROUILLER LE DOSSIER</button>
+      </form>
+      <div id="og-status" class="og-status">EN ATTENTE D'IDENTIFICATION<span class="og-cursor"></span></div>
     </div>
 
-    <div class="field">
-
-      <label for="password">
-        MOT DE PASSE
-      </label>
-
-      <input
-        id="password"
-        type="password"
-        placeholder="Votre mot de passe"
-        autocomplete="current-password"
-        required
-      >
-
+    <div id="og-countdown-wrap" class="og-countdown-wrap">
+      <div class="og-countdown-label">COMPTE À REBOURS — 12/06/2027 11H00</div>
+      <div class="og-countdown-grid">
+        <div class="og-countdown-block"><span id="og-cd-days">000</span><small>JOURS</small></div>
+        <div class="og-countdown-block"><span id="og-cd-hours">00</span><small>HEURES</small></div>
+        <div class="og-countdown-block"><span id="og-cd-minutes">00</span><small>MIN</small></div>
+        <div class="og-countdown-block"><span id="og-cd-seconds">00</span><small>SEC</small></div>
+      </div>
     </div>
 
-    <button
-      class="open-button"
-      id="login-button"
-      type="submit"
-    >
-      OUVRIR LE COFFRE →
-    </button>
+    <div id="og-dashboard" class="og-dashboard">
+      <div class="og-dashboard-header"><strong>PROJET OG</strong> — PAGE DE L'ÉVÉNEMENT</div>
+      <div id="og-dashboard-reveal" class="og-dashboard-reveal"></div>
 
-    <div
-      class="message"
-      id="login-message"
-    ></div>
+      <section class="og-section">
+        <h2 class="og-section-title">ÉQUIPES</h2>
+        <div id="og-teams-list"></div>
+        <div class="og-admin-only">
+          <button type="button" id="og-add-team-btn" class="og-btn-small">+ AJOUTER UNE ÉQUIPE</button>
+          <div id="og-team-form" class="og-form" style="display:none">
+            <div id="og-team-form-title" class="og-form-title">NOUVELLE ÉQUIPE</div>
+            <label for="og-team-name">Nom</label>
+            <input type="text" id="og-team-name">
+            <label for="og-team-desc">Description</label>
+            <textarea id="og-team-desc"></textarea>
+            <div class="og-form-buttons">
+              <button type="button" id="og-team-form-submit" class="og-submit">ENREGISTRER</button>
+              <button type="button" id="og-team-form-cancel" class="og-btn-small">ANNULER</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  </form>
+      <section class="og-section">
+        <h2 class="og-section-title">ÉPREUVES</h2>
+        <div id="og-epreuves-list"></div>
+        <div class="og-admin-only">
+          <button type="button" id="og-add-epreuve-btn" class="og-btn-small">+ AJOUTER UNE ÉPREUVE</button>
+          <div id="og-epreuve-form" class="og-form" style="display:none">
+            <div id="og-epreuve-form-title" class="og-form-title">NOUVELLE ÉPREUVE</div>
+            <label for="og-epreuve-title">Titre</label>
+            <input type="text" id="og-epreuve-title">
+            <label for="og-epreuve-desc">Description</label>
+            <textarea id="og-epreuve-desc"></textarea>
+            <div class="og-form-buttons">
+              <button type="button" id="og-epreuve-form-submit" class="og-submit">ENREGISTRER</button>
+              <button type="button" id="og-epreuve-form-cancel" class="og-btn-small">ANNULER</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <div class="bottom">
-    ACCÈS RÉSERVÉ AUX PARTICIPANTS
+      <section class="og-section og-admin-only">
+        <h2 class="og-section-title">PARTICIPANTS</h2>
+        <div id="og-participants-list"></div>
+      </section>
+    </div>
   </div>
 
-</div>
-
-<div
-  class="countdown"
-  id="countdown"
->
-  INITIALISATION DU COMPTE À REBOURS...
-</div>
-```
-
+  <div id="og-vault-overlay" class="og-vault-overlay">
+    <div id="og-vault-dial" class="og-vault-dial">
+      <svg viewBox="0 0 100 100" width="84" height="84">
+        <circle class="og-dial-ring" cx="50" cy="50" r="46" fill="none" stroke-width="3"/>
+        <circle class="og-dial-center" cx="50" cy="50" r="4"/>
+        <line class="og-dial-hand-long" x1="50" y1="50" x2="50" y2="12" stroke-width="3" stroke-linecap="round"/>
+        <line class="og-dial-hand-short" x1="50" y1="50" x2="76" y2="50" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div id="og-vault-door-left" class="og-vault-door og-vault-door-left"></div>
+    <div id="og-vault-door-right" class="og-vault-door og-vault-door-right"></div>
   </div>
 
-  <script>
+<script>
+(function () {
+  // ⚠️ vérifie cette URL, et colle ta clé publishable ci-dessous (étape 4 du guide)
+  const SUPABASE_URL = "https://mlgzjqrcuwubwgxqgumb.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "COLLE_TA_CLE_ICI";
 
-    /* =====================================================
-       SUPABASE
-       ===================================================== */
+  const appState = {
+    role: null,
+    reveal: "",
+    teams: [],
+    epreuves: [],
+    participants: [],
+    adminIdentifier: null,
+    adminPassword: null,
+    editingTeamId: null,
+    editingEpreuveId: null,
+  };
 
-    /*
-     * config.js doit contenir :
-     *
-     * const SUPABASE_URL = "https://xxxxxxxx.supabase.co";
-     *
-     * const SUPABASE_PUBLISHABLE_KEY =
-     * "sb_publishable_xxxxxxxxx";
-     *
-     */
+  const form = document.getElementById("og-login-form");
+  const statusEl = document.getElementById("og-status");
+  const terminalEl = document.querySelector(".og-terminal");
+  const pageTitleEl = document.querySelector(".og-page-title");
+  const countdownWrapEl = document.getElementById("og-countdown-wrap");
+  const dashboardEl = document.getElementById("og-dashboard");
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const supabaseClient =
-      window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY
-      );
+  // ---------- Compte à rebours ----------
+  const EVENT_DATE = new Date("2027-06-12T11:00:00+02:00");
 
+  function updateCountdown() {
+    const now = new Date();
+    let diff = EVENT_DATE.getTime() - now.getTime();
+    if (diff < 0) diff = 0;
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    document.getElementById("og-cd-days").textContent = String(days).padStart(3, "0");
+    document.getElementById("og-cd-hours").textContent = String(hours).padStart(2, "0");
+    document.getElementById("og-cd-minutes").textContent = String(minutes).padStart(2, "0");
+    document.getElementById("og-cd-seconds").textContent = String(seconds).padStart(2, "0");
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
 
-    /* =====================================================
-       COMPTE À REBOURS
-       ===================================================== */
+  // ---------- Utilitaires ----------
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+  }
 
-    const eventDate =
-      new Date(
-        "2027-06-12T11:00:00+02:00"
-      ).getTime();
+  function scrambleReveal(finalText) {
+    if (prefersReducedMotion) {
+      statusEl.textContent = finalText;
+      return;
+    }
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
+    const steps = 14;
+    let frame = 0;
+    const timer = setInterval(() => {
+      frame++;
+      const progress = frame / steps;
+      let out = "";
+      for (let i = 0; i < finalText.length; i++) {
+        const c = finalText[i];
+        if (c === "\n" || c === " " || i / finalText.length < progress) {
+          out += c;
+        } else {
+          out += chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+      statusEl.textContent = out;
+      if (frame >= steps) clearInterval(timer);
+    }, 900 / steps);
+  }
 
+  async function callFunction(name, payload) {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+    return { ok: res.ok, result };
+  }
 
-    function updateCountdown() {
+  // ---------- Rendu des listes ----------
+  function renderTeams() {
+    const container = document.getElementById("og-teams-list");
+    container.innerHTML = "";
+    if (appState.teams.length === 0) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = appState.role === "admin" ? "Aucune équipe pour l'instant." : "Aucune équipe révélée pour l'instant.";
+      container.appendChild(msg);
+    }
+    appState.teams.forEach((team) => {
+      const item = document.createElement("div");
+      item.className = "og-item" + (team.visible ? "" : " og-item-hidden");
+      let html = '<div class="og-item-header"><strong>' + escapeHtml(team.name) + "</strong>";
+      if (appState.role === "admin" && !team.visible) html += '<span class="og-badge">CACHÉ</span>';
+      html += "</div>";
+      if (team.description) html += '<div class="og-item-desc">' + escapeHtml(team.description) + "</div>";
+      item.innerHTML = html;
 
-      const now =
-        new Date().getTime();
+      if (appState.role === "admin") {
+        const controls = document.createElement("div");
+        controls.className = "og-item-controls";
 
-      const difference =
-        eventDate - now;
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "og-btn-small";
+        toggleBtn.textContent = team.visible ? "CACHER" : "RÉVÉLER";
+        toggleBtn.addEventListener("click", () => adminAction("toggle_team", team.id));
+        controls.appendChild(toggleBtn);
 
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "og-btn-small";
+        editBtn.textContent = "MODIFIER";
+        editBtn.addEventListener("click", () => openTeamForm(team));
+        controls.appendChild(editBtn);
 
-      const countdown =
-        document.getElementById(
-          "countdown"
-        );
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "og-btn-small og-btn-danger";
+        deleteBtn.textContent = "SUPPRIMER";
+        deleteBtn.addEventListener("click", () => {
+          if (confirm("Supprimer l'équipe \"" + team.name + "\" ?")) adminAction("delete_team", team.id);
+        });
+        controls.appendChild(deleteBtn);
 
+        item.appendChild(controls);
+      }
+      container.appendChild(item);
+    });
+  }
 
-      if (difference <= 0) {
+  function renderEpreuves() {
+    const container = document.getElementById("og-epreuves-list");
+    container.innerHTML = "";
+    if (appState.epreuves.length === 0) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = appState.role === "admin" ? "Aucune épreuve pour l'instant." : "Aucune épreuve révélée pour l'instant.";
+      container.appendChild(msg);
+    }
+    appState.epreuves.forEach((epreuve) => {
+      const item = document.createElement("div");
+      item.className = "og-item" + (epreuve.visible ? "" : " og-item-hidden");
+      let html = '<div class="og-item-header"><strong>' + escapeHtml(epreuve.title) + "</strong>";
+      if (appState.role === "admin" && !epreuve.visible) html += '<span class="og-badge">CACHÉ</span>';
+      html += "</div>";
+      if (epreuve.description) html += '<div class="og-item-desc">' + escapeHtml(epreuve.description) + "</div>";
+      item.innerHTML = html;
 
-        countdown.textContent =
-          "LES OBER’GAMES ONT COMMENCÉ";
+      if (appState.role === "admin") {
+        const controls = document.createElement("div");
+        controls.className = "og-item-controls";
 
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "og-btn-small";
+        toggleBtn.textContent = epreuve.visible ? "CACHER" : "RÉVÉLER";
+        toggleBtn.addEventListener("click", () => adminAction("toggle_epreuve", epreuve.id));
+        controls.appendChild(toggleBtn);
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "og-btn-small";
+        editBtn.textContent = "MODIFIER";
+        editBtn.addEventListener("click", () => openEpreuveForm(epreuve));
+        controls.appendChild(editBtn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "og-btn-small og-btn-danger";
+        deleteBtn.textContent = "SUPPRIMER";
+        deleteBtn.addEventListener("click", () => {
+          if (confirm("Supprimer l'épreuve \"" + epreuve.title + "\" ?")) adminAction("delete_epreuve", epreuve.id);
+        });
+        controls.appendChild(deleteBtn);
+
+        item.appendChild(controls);
+      }
+      container.appendChild(item);
+    });
+  }
+
+  function renderParticipants() {
+    const container = document.getElementById("og-participants-list");
+    container.innerHTML = "";
+    if (appState.participants.length === 0) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = "Aucun participant pour l'instant.";
+      container.appendChild(msg);
+      return;
+    }
+    appState.participants.forEach((p) => {
+      const item = document.createElement("div");
+      item.className = "og-item" + (p.visible ? "" : " og-item-hidden");
+      item.innerHTML =
+        '<div class="og-item-header"><strong>' + escapeHtml(p.username) + '</strong><span class="og-badge og-badge-role">' +
+        escapeHtml(p.role).toUpperCase() + "</span></div>";
+
+      const controls = document.createElement("div");
+      controls.className = "og-item-controls";
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "og-btn-small";
+      toggleBtn.textContent = p.visible ? "CACHER" : "RÉVÉLER";
+      toggleBtn.addEventListener("click", () => adminAction("toggle_participant", p.id));
+      controls.appendChild(toggleBtn);
+      item.appendChild(controls);
+
+      container.appendChild(item);
+    });
+  }
+
+  // ---------- Actions admin ----------
+  async function adminAction(action, id, fields) {
+    try {
+      const { ok, result } = await callFunction("admin-manage", {
+        adminIdentifier: appState.adminIdentifier,
+        adminPassword: appState.adminPassword,
+        action: action,
+        id: id || null,
+        fields: fields || null,
+      });
+      if (!ok) {
+        alert(result.error || "Une erreur est survenue.");
+        return;
+      }
+      appState.teams = result.teams || [];
+      appState.epreuves = result.epreuves || [];
+      appState.participants = result.participants || [];
+      renderTeams();
+      renderEpreuves();
+      renderParticipants();
+    } catch (err) {
+      alert("Erreur de connexion au serveur.");
+    }
+  }
+
+  function openTeamForm(team) {
+    appState.editingTeamId = team ? team.id : null;
+    document.getElementById("og-team-form-title").textContent = team ? "MODIFIER L'ÉQUIPE" : "NOUVELLE ÉQUIPE";
+    document.getElementById("og-team-name").value = team ? team.name : "";
+    document.getElementById("og-team-desc").value = team ? (team.description || "") : "";
+    document.getElementById("og-team-form").style.display = "block";
+  }
+  function closeTeamForm() { document.getElementById("og-team-form").style.display = "none"; }
+
+  function openEpreuveForm(epreuve) {
+    appState.editingEpreuveId = epreuve ? epreuve.id : null;
+    document.getElementById("og-epreuve-form-title").textContent = epreuve ? "MODIFIER L'ÉPREUVE" : "NOUVELLE ÉPREUVE";
+    document.getElementById("og-epreuve-title").value = epreuve ? epreuve.title : "";
+    document.getElementById("og-epreuve-desc").value = epreuve ? (epreuve.description || "") : "";
+    document.getElementById("og-epreuve-form").style.display = "block";
+  }
+  function closeEpreuveForm() { document.getElementById("og-epreuve-form").style.display = "none"; }
+
+  document.getElementById("og-add-team-btn").addEventListener("click", () => openTeamForm(null));
+  document.getElementById("og-team-form-cancel").addEventListener("click", closeTeamForm);
+  document.getElementById("og-team-form-submit").addEventListener("click", () => {
+    const name = document.getElementById("og-team-name").value.trim();
+    const description = document.getElementById("og-team-desc").value.trim();
+    if (!name) return;
+    if (appState.editingTeamId) {
+      adminAction("update_team", appState.editingTeamId, { name, description });
+    } else {
+      adminAction("create_team", null, { name, description });
+    }
+    closeTeamForm();
+  });
+
+  document.getElementById("og-add-epreuve-btn").addEventListener("click", () => openEpreuveForm(null));
+  document.getElementById("og-epreuve-form-cancel").addEventListener("click", closeEpreuveForm);
+  document.getElementById("og-epreuve-form-submit").addEventListener("click", () => {
+    const title = document.getElementById("og-epreuve-title").value.trim();
+    const description = document.getElementById("og-epreuve-desc").value.trim();
+    if (!title) return;
+    if (appState.editingEpreuveId) {
+      adminAction("update_epreuve", appState.editingEpreuveId, { title, description });
+    } else {
+      adminAction("create_epreuve", null, { title, description });
+    }
+    closeEpreuveForm();
+  });
+
+  // ---------- Animation coffre-fort ----------
+  function playVaultAnimation(onComplete) {
+    if (prefersReducedMotion) {
+      onComplete();
+      return;
+    }
+    const overlay = document.getElementById("og-vault-overlay");
+    const dial = document.getElementById("og-vault-dial");
+    const doorLeft = document.getElementById("og-vault-door-left");
+    const doorRight = document.getElementById("og-vault-door-right");
+
+    overlay.style.display = "block";
+    dial.classList.add("og-vault-spin");
+
+    setTimeout(function () {
+      dial.classList.add("og-vault-fade");
+      doorLeft.classList.add("og-vault-open");
+      doorRight.classList.add("og-vault-open");
+    }, 750);
+
+    setTimeout(function () {
+      overlay.style.display = "none";
+      onComplete();
+    }, 750 + 1000 + 150);
+  }
+
+  function prepareDashboard() {
+    pageTitleEl.style.display = "none";
+    terminalEl.style.display = "none";
+    countdownWrapEl.style.display = "none";
+    dashboardEl.style.display = "block";
+    document.getElementById("og-dashboard-reveal").textContent = appState.reveal || "";
+    if (appState.role === "admin") dashboardEl.classList.add("og-is-admin");
+    renderTeams();
+    renderEpreuves();
+    if (appState.role === "admin") renderParticipants();
+  }
+
+  // ---------- Connexion ----------
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const identifier = document.getElementById("og-identifier").value.trim();
+    const password = document.getElementById("og-password").value;
+
+    statusEl.className = "og-status";
+    statusEl.textContent = "VÉRIFICATION EN COURS...";
+
+    try {
+      const { ok, result } = await callFunction("login", { identifier, password });
+
+      if (!ok) {
+        statusEl.className = "og-status denied";
+        statusEl.textContent = "ACCÈS REFUSÉ — " + (result.error || "IDENTIFIANTS INVALIDES");
         return;
       }
 
+      appState.role = result.role;
+      appState.reveal = result.reveal;
+      appState.teams = result.teams || [];
+      appState.epreuves = result.epreuves || [];
+      appState.participants = result.participants || [];
+      if (result.role === "admin") {
+        appState.adminIdentifier = identifier;
+        appState.adminPassword = password;
+      }
 
-      const days =
-        Math.floor(
-          difference /
-          (1000 * 60 * 60 * 24)
-        );
+      statusEl.className = "og-status granted";
+      const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
+      scrambleReveal(label + "\n" + result.reveal);
+      form.querySelectorAll("input, button").forEach(function (el) { el.disabled = true; });
 
-
-      const hours =
-        Math.floor(
-          (difference /
-          (1000 * 60 * 60)) % 24
-        );
-
-
-      const minutes =
-        Math.floor(
-          (difference /
-          (1000 * 60)) % 60
-        );
-
-
-      const seconds =
-        Math.floor(
-          (difference / 1000) % 60
-        );
-
-
-      countdown.textContent =
-        `${days}J ` +
-        `${String(hours).padStart(2, "0")}H ` +
-        `${String(minutes).padStart(2, "0")}M ` +
-        `${String(seconds).padStart(2, "0")}S`;
+      setTimeout(function () {
+        prepareDashboard();
+        playVaultAnimation(function () {});
+      }, 1100);
+    } catch (err) {
+      statusEl.className = "og-status denied";
+      statusEl.textContent = "ERREUR DE CONNEXION AU SYSTÈME — RÉESSAIE";
     }
-
-
-    updateCountdown();
-
-    setInterval(
-      updateCountdown,
-      1000
-    );
-
-
-    /* =====================================================
-       CONNEXION
-       ===================================================== */
-
-    document
-      .getElementById("login-form")
-      .addEventListener(
-        "submit",
-        async function(event) {
-
-          event.preventDefault();
-
-
-          const message =
-            document.getElementById(
-              "login-message"
-            );
-
-          const button =
-            document.getElementById(
-              "login-button"
-            );
-
-
-          const identifier =
-            document
-              .getElementById("identifier")
-              .value
-              .trim();
-
-
-          const password =
-            document
-              .getElementById("password")
-              .value;
-
-
-          if (!identifier || !password) {
-
-            message.className =
-              "message error";
-
-            message.textContent =
-              "VEUILLEZ RENSEIGNER TOUS LES CHAMPS";
-
-            return;
-          }
-
-
-          /*
-           * État de chargement
-           */
-
-          button.disabled = true;
-
-          message.className =
-            "message";
-
-          message.textContent =
-            "VÉRIFICATION DES ACCÈS...";
-
-
-          try {
-
-            /*
-             * Appel de l'Edge Function
-             *
-             * IMPORTANT :
-             * SUPABASE_URL ne doit PAS contenir
-             * /rest/v1/
-             */
-
-            const response =
-              await fetch(
-                `${SUPABASE_URL}/functions/v1/login`,
-                {
-                  method: "POST",
-
-                  headers: {
-                    "Content-Type":
-                      "application/json",
-
-                    "apikey":
-                      SUPABASE_PUBLISHABLE_KEY,
-
-                    "Authorization":
-                      `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
-                  },
-
-                  body:
-                    JSON.stringify({
-                      identifier:
-                        identifier,
-
-                      password:
-                        password
-                    })
-                }
-              );
-
-
-            /*
-             * Lecture de la réponse
-             */
-
-            let result;
-
-            try {
-
-              result =
-                await response.json();
-
-            } catch {
-
-              result = {};
-
-            }
-
-
-            /*
-             * Erreur renvoyée par la fonction
-             */
-
-            if (!response.ok) {
-
-              console.error(
-                "Erreur login :",
-                result
-              );
-
-              message.className =
-                "message error";
-
-              message.textContent =
-                result.error ||
-                "ACCÈS REFUSÉ";
-
-              button.disabled = false;
-
-              return;
-            }
-
-
-            /*
-             * Vérification des tokens
-             */
-
-            if (
-              !result.access_token ||
-              !result.refresh_token
-            ) {
-
-              console.error(
-                "Réponse inattendue :",
-                result
-              );
-
-              message.className =
-                "message error";
-
-              message.textContent =
-                "RÉPONSE DU SYSTÈME INVALIDE";
-
-              button.disabled = false;
-
-              return;
-            }
-
-
-            /*
-             * Création de la session Supabase
-             */
-
-            const {
-              error: sessionError
-            } =
-              await supabaseClient.auth.setSession({
-
-                access_token:
-                  result.access_token,
-
-                refresh_token:
-                  result.refresh_token
-
-              });
-
-
-            if (sessionError) {
-
-              console.error(
-                "Erreur session :",
-                sessionError
-              );
-
-              message.className =
-                "message error";
-
-              message.textContent =
-                "ERREUR DE SESSION";
-
-              button.disabled = false;
-
-              return;
-            }
-
-
-            /*
-             * Connexion réussie
-             */
-
-            message.className =
-              "message success";
-
-            message.textContent =
-              "ACCÈS AUTORISÉ";
-
-
-            /*
-             * Animation du coffre
-             */
-
-            document
-              .getElementById("screen")
-              .classList
-              .add("unlocking");
-
-
-            /*
-             * Transition vers la page suivante
-             */
-
-            setTimeout(
-              function() {
-
-                document.body.innerHTML = `
-
-                  <div style="
-                    width:100vw;
-                    height:100vh;
-
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-
-                    background:#050505;
-
-                    color:white;
-
-                    font-family:
-                      Arial,
-                      Helvetica,
-                      sans-serif;
-
-                    text-align:center;
-                  ">
-
-                    <div>
-
-                      <div style="
-                        font-size:12px;
-                        letter-spacing:5px;
-                        color:#888;
-                        margin-bottom:20px;
-                      ">
-                        ACCÈS AUTORISÉ
-                      </div>
-
-                      <div style="
-                        font-size:32px;
-                        letter-spacing:6px;
-                      ">
-                        DOSSIER OG
-                      </div>
-
-                      <div style="
-                        margin-top:20px;
-                        font-size:11px;
-                        letter-spacing:3px;
-                        color:#666;
-                      ">
-                        INITIALISATION DU PROJET...
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                `;
-
-              },
-              1500
-            );
-
-          } catch (error) {
-
-            console.error(
-              "Erreur réseau :",
-              error
-            );
-
-            message.className =
-              "message error";
-
-            message.textContent =
-              "IMPOSSIBLE DE CONTACTER LE SYSTÈME";
-
-            button.disabled = false;
-          }
-
-        }
-      );
-
-  </script>
+  });
+})();
+</script>
 
 </body>
 </html>
