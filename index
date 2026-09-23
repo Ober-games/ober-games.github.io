@@ -302,6 +302,11 @@
 </head>
 <body>
 
+<script>
+  window.OG_SUPABASE_URL = "https://mlgzjqrcuwubwgxqgumb.supabase.co";
+  window.OG_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_URxO2i1iv3iw-taxs5TcRg_MjFVFYHJ";
+</script>
+
   <div class="og-terminal-wrap">
     <h1 class="og-page-title">PROJET OG</h1>
 
@@ -394,9 +399,8 @@
 
 <script>
 (function () {
-  // ⚠️ vérifie cette URL, et colle ta clé publishable ci-dessous (étape 4 du guide)
-  const SUPABASE_URL = "https://mlgzjqrcuwubwgxqgumb.supabase.co";
-  const SUPABASE_PUBLISHABLE_KEY = "COLLE_TA_CLE_ICI";
+  const SUPABASE_URL = window.OG_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = window.OG_SUPABASE_PUBLISHABLE_KEY;
 
   const appState = {
     role: null,
