@@ -1,2867 +1,966 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Projet OG</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-
 <style>
-
-:root {
-  --bg: #0d0f0c;
-  --panel: #14170f;
-  --amber: #e8933a;
-  --amber-dim: #8a6a3a;
-  --denied: #c94f3d;
-  --granted: #7fae6a;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  font-family: "IBM Plex Mono", "Courier New", monospace;
-}
-
-
-/* =========================================================
-   PAGE LOGIN
-========================================================= */
-
-.og-terminal-wrap {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 48px 20px;
-}
-
-.og-page-title {
-  font-size: 34px;
-  letter-spacing: 0.1em;
-  color: var(--amber);
-  text-align: center;
-  margin: 0 0 28px;
-  text-shadow: 0 0 16px rgba(232, 147, 58, 0.35);
-}
-
-.og-terminal {
-  position: relative;
-  width: 100%;
-  max-width: 460px;
-  background: var(--panel);
-  border: 1px solid var(--amber-dim);
-  border-radius: 4px;
-  padding: 32px 28px;
-  color: var(--amber);
-  overflow: hidden;
-}
-
-.og-terminal::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0,0,0,0.15),
-    rgba(0,0,0,0.15) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  pointer-events: none;
-}
-
-.og-field {
-  position: relative;
-  margin-bottom: 18px;
-}
-
-.og-field label {
-  display: block;
-  font-size: 12px;
-  color: var(--amber-dim);
-  margin-bottom: 6px;
-}
-
-.og-field label::before {
-  content: "> ";
-}
-
-.og-field input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--amber-dim);
-  color: var(--amber);
-  font-family: inherit;
-  font-size: 15px;
-  padding: 6px 2px;
-  outline: none;
-}
-
-.og-field input:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 3px;
-}
-
-.og-submit {
-  position: relative;
-  width: 100%;
-  margin-top: 8px;
-  background: transparent;
-  border: 1px solid var(--amber);
-  color: var(--amber);
-  font-family: inherit;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  padding: 12px;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.og-submit:hover {
-  background: var(--amber);
-  color: var(--bg);
-}
-
-.og-submit:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 3px;
-}
-
-.og-submit:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.og-status {
-  position: relative;
-  margin-top: 18px;
-  font-size: 12px;
-  min-height: 32px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  color: var(--amber-dim);
-}
-
-.og-status.denied {
-  color: var(--denied);
-  animation: og-shake 0.3s ease;
-}
-
-.og-status.granted {
-  color: var(--granted);
-}
-
-@keyframes og-shake {
-  0%, 100% {
-    transform: translateX(0);
+  :root {
+    --bg: #0d0f0c;
+    --panel: #14170f;
+    --amber: #e8933a;
+    --amber-dim: #8a6a3a;
+    --denied: #c94f3d;
+    --granted: #7fae6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: "IBM Plex Mono", "Courier New", monospace;
   }
 
-  25% {
-    transform: translateX(-4px);
+  .og-terminal-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 48px 20px;
   }
-
-  75% {
-    transform: translateX(4px);
-  }
-}
-
-.og-cursor {
-  display: inline-block;
-  width: 8px;
-  height: 13px;
-  background: var(--amber);
-  animation: og-blink 1s steps(1) infinite;
-  vertical-align: text-bottom;
-  margin-left: 2px;
-}
-
-@keyframes og-blink {
-  50% {
-    opacity: 0;
-  }
-}
-
-
-/* =========================================================
-   COUNTDOWN
-========================================================= */
-
-.og-countdown-wrap {
-  width: 100%;
-  max-width: 460px;
-  margin-top: 28px;
-  text-align: center;
-}
-
-.og-countdown-label {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--amber-dim);
-  margin-bottom: 10px;
-}
-
-.og-countdown-grid {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-.og-countdown-block {
-  background: var(--panel);
-  border: 1px solid var(--amber-dim);
-  border-radius: 4px;
-  padding: 10px 14px;
-  min-width: 56px;
-}
-
-.og-countdown-block span {
-  display: block;
-  font-size: 22px;
-  color: var(--amber);
-  font-weight: 600;
-}
-
-.og-countdown-block small {
-  display: block;
-  font-size: 9px;
-  color: var(--amber-dim);
-  letter-spacing: 0.06em;
-  margin-top: 2px;
-}
-
-
-/* =========================================================
-   DASHBOARD
-========================================================= */
-
-.og-dashboard {
-  display: none;
-  width: 100%;
-  max-width: 640px;
-  color: var(--amber);
-}
-
-.og-dashboard-header {
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  color: var(--amber-dim);
-  border-bottom: 1px solid var(--amber-dim);
-  padding-bottom: 12px;
-  margin-bottom: 10px;
-}
-
-.og-dashboard-header strong {
-  color: var(--amber);
-}
-
-.og-dashboard-reveal {
-  font-size: 12px;
-  color: var(--amber-dim);
-  margin-bottom: 24px;
-}
-
-.og-section {
-  margin-bottom: 32px;
-}
-
-.og-section-title {
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--amber);
-  margin: 0 0 12px;
-  border-bottom: 1px solid var(--amber-dim);
-  padding-bottom: 8px;
-}
-
-.og-item {
-  border: 1px solid var(--amber-dim);
-  border-radius: 4px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  font-size: 13px;
-}
-
-.og-item-hidden {
-  opacity: 0.55;
-  border-style: dashed;
-}
-
-.og-item-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.og-item-desc {
-  color: var(--amber-dim);
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.og-badge {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--denied);
-  border: 1px solid var(--denied);
-  border-radius: 3px;
-  padding: 1px 6px;
-  white-space: nowrap;
-}
-
-.og-badge-role {
-  color: var(--amber-dim);
-  border-color: var(--amber-dim);
-}
-
-.og-item-controls {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.og-btn-small {
-  background: transparent;
-  border: 1px solid var(--amber-dim);
-  color: var(--amber);
-  font-family: inherit;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  padding: 6px 10px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-
-.og-btn-small:hover {
-  border-color: var(--amber);
-}
-
-.og-btn-danger {
-  border-color: var(--denied);
-  color: var(--denied);
-}
-
-.og-btn-danger:hover {
-  background: var(--denied);
-  color: var(--bg);
-}
-
-.og-admin-only {
-  display: none;
-}
-
-.og-dashboard.og-is-admin .og-admin-only {
-  display: block;
-}
-
-.og-form {
-  border: 1px solid var(--amber-dim);
-  border-radius: 4px;
-  padding: 14px;
-  margin-top: 10px;
-}
-
-.og-form-title {
-  font-size: 12px;
-  margin-bottom: 10px;
-  color: var(--amber-dim);
-}
-
-.og-form label {
-  display: block;
-  font-size: 11px;
-  color: var(--amber-dim);
-  margin: 10px 0 4px;
-}
-
-.og-form input,
-.og-form textarea {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--amber-dim);
-  border-radius: 3px;
-  color: var(--amber);
-  font-family: inherit;
-  font-size: 13px;
-  padding: 8px;
-}
-
-.og-form textarea {
-  min-height: 60px;
-  resize: vertical;
-}
-
-.og-form input:focus-visible,
-.og-form textarea:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-}
-
-.og-form-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.og-form-buttons .og-submit {
-  margin-top: 0;
-}
-
-.og-empty {
-  color: var(--amber-dim);
-  font-size: 12px;
-  font-style: italic;
-}
-
-
-/* =========================================================
-   OG VAULT
-========================================================= */
-
-.og-vault-overlay {
-  position: fixed;
-  inset: 0;
-
-  display: none;
-
-  overflow: hidden;
-
-  z-index: 10000;
-
-  background: #080a08;
-
-  pointer-events: all;
-}
-
-
-/* ---------------------------------------------------------
-   INTÉRIEUR DU COFFRE
---------------------------------------------------------- */
-
-.og-vault-interior {
-  position: absolute;
-  inset: 0;
-
-  z-index: 1;
-
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(232, 147, 58, 0.11) 0%,
-      rgba(232, 147, 58, 0.025) 28%,
-      #070907 68%
-    );
-}
-
-.og-vault-interior::before {
-  content: "";
-
-  position: absolute;
-  inset: 11% 12%;
-
-  border-left: 1px solid rgba(138,106,58,0.20);
-  border-right: 1px solid rgba(138,106,58,0.20);
-
-  box-shadow:
-    inset 0 0 120px rgba(0,0,0,0.8);
-}
-
-.og-vault-interior::after {
-  content: "";
-
-  position: absolute;
-
-  left: 15%;
-  right: 15%;
-  bottom: 14%;
-
-  height: 1px;
-
-  background: rgba(232,147,58,0.32);
-
-  box-shadow:
-    0 0 30px rgba(232,147,58,0.14);
-}
-
-
-/* ---------------------------------------------------------
-   PORTES
---------------------------------------------------------- */
-
-.og-vault-door {
-  position: absolute;
-
-  top: 0;
-  bottom: 0;
-
-  width: 50%;
-
-  z-index: 5;
-
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.10),
-      rgba(0,0,0,0.10) 1px,
-      transparent 1px,
-      transparent 4px
-    ),
-    radial-gradient(
-      circle at center,
-      #1b1e16 0%,
-      #14170f 65%,
-      #0e100d 100%
-    );
-
-  border-color: var(--amber-dim);
-
-  box-shadow:
-    inset 0 0 90px rgba(0,0,0,0.55);
-
-  transition:
-    transform 1.45s cubic-bezier(0.77, 0, 0.18, 1);
-}
-
-.og-vault-door-left {
-  left: 0;
-
-  border-right: 1px solid var(--amber-dim);
-
-  transform: translateX(0);
-}
-
-.og-vault-door-right {
-  right: 0;
-
-  border-left: 1px solid var(--amber-dim);
-
-  transform: translateX(0);
-}
-
-
-/* détails verticaux */
-
-.og-vault-door-left::before,
-.og-vault-door-right::before {
-  content: "";
-
-  position: absolute;
-
-  top: 8%;
-  bottom: 8%;
-
-  width: 1px;
-
-  background: rgba(232,147,58,0.11);
-}
-
-.og-vault-door-left::before {
-  right: 14px;
-}
-
-.og-vault-door-right::before {
-  left: 14px;
-}
-
-
-/* ---------------------------------------------------------
-   SERRURE CENTRALE
---------------------------------------------------------- */
-
-.og-vault-lock {
-
-  position: fixed;
-
-  left: 50%;
-  top: 50%;
-
-  width: clamp(180px, 24vw, 310px);
-  height: clamp(180px, 24vw, 310px);
-
-  transform: translate(-50%, -50%);
-
-  z-index: 20;
-
-  transition:
-    transform 1.45s cubic-bezier(0.77, 0, 0.18, 1);
-}
-
-
-/* ---------------------------------------------------------
-   MÉCANISME ROTATIF
---------------------------------------------------------- */
-
-.og-lock-mechanism {
-
-  position: absolute;
-  inset: 0;
-
-  transform: rotate(0deg);
-
-  transition:
-    transform 1.25s cubic-bezier(0.65,0.05,0.20,1);
-}
-
-
-/* ---------------------------------------------------------
-   ANNEAUX
---------------------------------------------------------- */
-
-.og-lock-ring {
-
-  position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  transform: translate(-50%, -50%);
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle at 35% 30%,
-      #292c23 0%,
-      #171a14 48%,
-      #0b0d0b 100%
-    );
-
-  box-shadow:
-    inset 0 1px 2px rgba(232,147,58,0.14),
-    inset 0 -8px 15px rgba(0,0,0,0.8),
-    0 12px 30px rgba(0,0,0,0.65);
-}
-
-.og-lock-ring-outer {
-  width: 100%;
-  height: 100%;
-
-  border: 2px solid var(--amber-dim);
-}
-
-.og-lock-ring-middle {
-  width: 84%;
-  height: 84%;
-
-  border: 1px solid rgba(138,106,58,0.75);
-}
-
-.og-lock-ring-inner {
-  width: 66%;
-  height: 66%;
-
-  border: 1px solid rgba(138,106,58,0.55);
-}
-
-
-/* ---------------------------------------------------------
-   CENTRE OG
---------------------------------------------------------- */
-
-.og-lock-core {
-
-  position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  width: 55%;
-  height: 55%;
-
-  transform: translate(-50%, -50%);
-
-  border-radius: 50%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background:
-    radial-gradient(
-      circle at 35% 30%,
-      #25291f,
-      #090b09 72%
-    );
-
-  border: 1px solid var(--amber-dim);
-
-  box-shadow:
-    inset 0 2px 5px rgba(255,255,255,0.03),
-    inset 0 -8px 15px rgba(0,0,0,0.8);
-}
-
-.og-lock-core span {
-
-  color: var(--amber);
-
-  font-family:
-    "IBM Plex Mono",
-    "Courier New",
-    monospace;
-
-  font-size: clamp(28px,4vw,52px);
-
-  font-weight: 600;
-
-  letter-spacing: -4px;
-
-  transform: translateX(-2px);
-
-  text-shadow:
-    0 0 14px rgba(232,147,58,0.25);
-}
-
-
-/* ---------------------------------------------------------
-   PISTONS
---------------------------------------------------------- */
-
-.og-lock-piston {
-
-  position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  width: 10px;
-  height: clamp(30px,4vw,52px);
-
-  margin-left: -5px;
-
-  margin-top: calc(clamp(180px,24vw,310px) * -0.5);
-
-  transform-origin: 50% 100%;
-
-  opacity: 0;
-
-  transform:
-    translateY(-100%)
-    rotate(var(--piston-angle))
-    scaleY(0);
-
-  border-radius: 3px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #292b23 0%,
-      #7e775f 48%,
-      var(--amber) 75%,
-      #292b23 100%
-    );
-
-  box-shadow:
-    0 0 8px rgba(232,147,58,0.20);
-
-  transition:
-    transform 0.22s cubic-bezier(0.15,1.45,0.45,1),
-    opacity 0.08s ease;
-}
-
-.og-piston-1 { --piston-angle: 0deg; }
-.og-piston-2 { --piston-angle: 45deg; }
-.og-piston-3 { --piston-angle: 90deg; }
-.og-piston-4 { --piston-angle: 135deg; }
-.og-piston-5 { --piston-angle: 180deg; }
-.og-piston-6 { --piston-angle: 225deg; }
-.og-piston-7 { --piston-angle: 270deg; }
-.og-piston-8 { --piston-angle: 315deg; }
-
-
-/* ---------------------------------------------------------
-   SORTIE DES PISTONS
---------------------------------------------------------- */
-
-.og-vault-overlay.piston-1 .og-piston-1,
-.og-vault-overlay.piston-2 .og-piston-2,
-.og-vault-overlay.piston-3 .og-piston-3,
-.og-vault-overlay.piston-4 .og-piston-4,
-.og-vault-overlay.piston-5 .og-piston-5,
-.og-vault-overlay.piston-6 .og-piston-6,
-.og-vault-overlay.piston-7 .og-piston-7,
-.og-vault-overlay.piston-8 .og-piston-8 {
-
-  opacity: 1;
-
-  transform:
-    translateY(-100%)
-    rotate(var(--piston-angle))
-    scaleY(1);
-}
-
-
-/* ---------------------------------------------------------
-   ROTATION
---------------------------------------------------------- */
-
-.og-vault-overlay.og-lock-rotating
-.og-lock-mechanism {
-
-  transform: rotate(360deg);
-}
-
-
-/* ---------------------------------------------------------
-   OUVERTURE DES PORTES
---------------------------------------------------------- */
-
-.og-vault-overlay.og-vault-opening
-.og-vault-door-left {
-
-  transform: translateX(-100%);
-}
-
-.og-vault-overlay.og-vault-opening
-.og-vault-door-right {
-
-  transform: translateX(100%);
-}
-
-
-/*
-   La serrure est solidaire de la porte gauche.
-
-   Avant :
-
-              SERRURE
-                 ↓
-   ┌─────────────●─────────────┐
-
-   Après :
-
-   ←────────●
-*/
-
-.og-vault-overlay.og-vault-opening
-.og-vault-lock {
-
-  transform:
-    translate(
-      calc(-50% - 50vw),
-      -50%
-    );
-}
-
-
-/* ---------------------------------------------------------
-   LUMIÈRE INTÉRIEURE
---------------------------------------------------------- */
-
-.og-vault-overlay.og-vault-opening
-.og-vault-interior {
-
-  animation:
-    og-vault-light 1.2s ease forwards;
-}
-
-@keyframes og-vault-light {
-
-  0% {
-    filter: brightness(0.65);
-  }
-
-  55% {
-    filter: brightness(1.18);
-  }
-
-  100% {
-    filter: brightness(1);
-  }
-}
-
-
-/* ---------------------------------------------------------
-   FIN DE L'ANIMATION
---------------------------------------------------------- */
-
-.og-vault-overlay.og-vault-finished {
-
-  opacity: 0;
-
-  pointer-events: none;
-
-  transition:
-    opacity 0.65s ease;
-}
-
-
-/* =========================================================
-   ACCESSIBILITÉ
-========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  .og-vault-door,
-  .og-vault-lock,
-  .og-lock-mechanism,
-  .og-lock-piston {
-
-    transition: none !important;
-  }
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 480px) {
 
   .og-page-title {
-    font-size: 26px;
+    font-size: 34px;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    text-align: center;
+    margin: 0 0 28px;
+    text-shadow: 0 0 16px rgba(232, 147, 58, 0.35);
   }
 
+  .og-terminal {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    background: var(--panel);
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 32px 28px;
+    color: var(--amber);
+    overflow: hidden;
+  }
+  .og-terminal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+    pointer-events: none;
+  }
+
+  .og-field { position: relative; margin-bottom: 18px; }
+  .og-field label { display: block; font-size: 12px; color: var(--amber-dim); margin-bottom: 6px; }
+  .og-field label::before { content: "> "; }
+  .og-field input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 6px 2px;
+    outline: none;
+  }
+  .og-field input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+  .og-submit {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .og-submit:hover { background: var(--amber); color: var(--bg); }
+  .og-submit:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .og-submit:disabled { opacity: 0.5; cursor: default; }
+
+  .og-status {
+    position: relative;
+    margin-top: 18px;
+    font-size: 12px;
+    min-height: 32px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--amber-dim);
+  }
+  .og-status.denied { color: var(--denied); animation: og-shake 0.3s ease; }
+  .og-status.granted { color: var(--granted); }
+  @keyframes og-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  .og-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 13px;
+    background: var(--amber);
+    animation: og-blink 1s steps(1) infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+  @keyframes og-blink { 50% { opacity: 0; } }
+
+  /* Countdown */
+  .og-countdown-wrap {
+    width: 100%;
+    max-width: 460px;
+    margin-top: 28px;
+    text-align: center;
+  }
+  .og-countdown-label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--amber-dim);
+    margin-bottom: 10px;
+  }
+  .og-countdown-grid {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
   .og-countdown-block {
-    min-width: 46px;
-    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 10px 14px;
+    min-width: 56px;
   }
-
   .og-countdown-block span {
-    font-size: 18px;
+    display: block;
+    font-size: 22px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+  .og-countdown-block small {
+    display: block;
+    font-size: 9px;
+    color: var(--amber-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
   }
 
-  .og-vault-lock {
-
-    width: 155px;
-    height: 155px;
+  /* Dashboard (post-login "real page") */
+  .og-dashboard { display: none; width: 100%; max-width: 640px; color: var(--amber); }
+  .og-dashboard-header {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--amber-dim);
+    border-bottom: 1px solid var(--amber-dim);
+    padding-bottom: 12px;
+    margin-bottom: 10px;
   }
-}
+  .og-dashboard-header strong { color: var(--amber); }
+  .og-dashboard-reveal { font-size: 12px; color: var(--amber-dim); margin-bottom: 24px; }
 
+  .og-section { margin-bottom: 32px; }
+  .og-section-title {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin: 0 0 12px;
+    border-bottom: 1px solid var(--amber-dim);
+    padding-bottom: 8px;
+  }
+
+  .og-item {
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .og-item-hidden { opacity: 0.55; border-style: dashed; }
+  .og-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .og-item-desc { color: var(--amber-dim); margin-top: 4px; font-size: 12px; line-height: 1.5; }
+  .og-badge {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--denied);
+    border: 1px solid var(--denied);
+    border-radius: 3px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+  .og-badge-role { color: var(--amber-dim); border-color: var(--amber-dim); }
+
+  .og-item-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .og-btn-small {
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .og-btn-small:hover { border-color: var(--amber); }
+  .og-btn-danger { border-color: var(--denied); color: var(--denied); }
+  .og-btn-danger:hover { background: var(--denied); color: var(--bg); }
+
+  .og-admin-only { display: none; }
+  .og-dashboard.og-is-admin .og-admin-only { display: block; }
+
+  .og-form {
+    border: 1px solid var(--amber-dim);
+    border-radius: 4px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .og-form-title { font-size: 12px; margin-bottom: 10px; color: var(--amber-dim); }
+  .og-form label { display: block; font-size: 11px; color: var(--amber-dim); margin: 10px 0 4px; }
+  .og-form input, .og-form textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--amber-dim);
+    border-radius: 3px;
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px;
+  }
+  .og-form textarea { min-height: 60px; resize: vertical; }
+  .og-form input:focus-visible, .og-form textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .og-form-buttons { display: flex; gap: 8px; margin-top: 12px; }
+  .og-form-buttons .og-submit { margin-top: 0; }
+
+  .og-empty { color: var(--amber-dim); font-size: 12px; font-style: italic; }
+
+  /* =========================================================
+     OG VAULT
+  ========================================================= */
+
+  :root {
+    --vault-bg: #080909;
+    --vault-metal: #151616;
+    --vault-metal-light: #242525;
+    --vault-border: rgba(255,255,255,.12);
+    --vault-accent: #d7c7ad;
+    --lock-size: clamp(170px, 24vw, 310px);
+    --piston-length: clamp(28px, 4vw, 55px);
+  }
+
+  #og-vault {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 55%, rgba(215,199,173,.035), transparent 38%),
+      #080909;
+    opacity: 1;
+    pointer-events: all;
+    transition: opacity .7s ease;
+    font-family: inherit;
+  }
+
+  .vault-frame {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: linear-gradient(90deg, rgba(255,255,255,.025), transparent 15%, transparent 85%, rgba(255,255,255,.025));
+  }
+
+  .vault-interior {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, rgba(215,199,173,.08), transparent 35%),
+      #030404;
+    z-index: 1;
+  }
+  .vault-interior::before {
+    content: "";
+    position: absolute;
+    left: 12%; right: 12%; top: 18%; bottom: 14%;
+    border-left: 1px solid rgba(215,199,173,.08);
+    border-right: 1px solid rgba(215,199,173,.08);
+    box-shadow: inset 0 0 80px rgba(0,0,0,.8);
+  }
+  .vault-interior-light {
+    position: absolute;
+    left: 18%; right: 18%; bottom: 15%;
+    height: 1px;
+    background: rgba(215,199,173,.4);
+    box-shadow: 0 0 25px rgba(215,199,173,.15);
+  }
+
+  .vault-door {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 50%;
+    z-index: 5;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.035), transparent 20%, transparent 80%, rgba(0,0,0,.2)),
+      linear-gradient(180deg, #1b1d1d, #111313 55%, #171919);
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: inset 0 0 70px rgba(0,0,0,.4);
+    transition: transform 1.35s cubic-bezier(.77,0,.18,1);
+  }
+  .vault-door-left { left: 0; border-right: 1px solid rgba(255,255,255,.18); transform: translateX(0); }
+  .vault-door-right { right: 0; border-left: 1px solid rgba(255,255,255,.18); transform: translateX(0); }
+  .vault-door::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .18;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent 80px, rgba(255,255,255,.018) 81px);
+  }
+
+  .og-lock {
+    position: absolute;
+    width: var(--lock-size);
+    height: var(--lock-size);
+    right: calc(var(--lock-size) * -.5);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lock-assembly {
+    position: relative;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(0deg);
+    transition: transform 1.15s cubic-bezier(.65,.05,.2,1);
+  }
+
+  .lock-ring {
+    position: absolute;
+    border-radius: 50%;
+    box-sizing: border-box;
+    background: linear-gradient(145deg, #303232, #0d0f0f 55%, #272929);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.12), inset 0 -2px 4px rgba(0,0,0,.8), 0 8px 25px rgba(0,0,0,.45);
+  }
+  .lock-ring-outer { width: 100%; height: 100%; border: 2px solid rgba(255,255,255,.16); }
+  .lock-ring-middle { width: 84%; height: 84%; border: 1px solid rgba(255,255,255,.12); background: linear-gradient(145deg, #202222, #0c0d0d); }
+  .lock-ring-inner { width: 66%; height: 66%; border: 1px solid rgba(255,255,255,.16); background: radial-gradient(circle, #191b1b, #0b0c0c); }
+
+  .lock-core {
+    position: absolute;
+    width: 57%; height: 57%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    background: radial-gradient(circle at 35% 30%, #242727, #090a0a 70%);
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: inset 0 2px 4px rgba(255,255,255,.05), inset 0 -5px 10px rgba(0,0,0,.8);
+  }
+  .lock-core span {
+    color: #d8d0c4;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: clamp(26px, 4vw, 52px);
+    font-weight: 700;
+    letter-spacing: -3px;
+    transform: translateX(-1px);
+    text-shadow: 0 1px 2px rgba(0,0,0,.8);
+  }
+
+  .lock-piston {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: var(--piston-length);
+    height: clamp(8px, 1vw, 13px);
+    margin-left: calc(var(--piston-length) * -.5);
+    margin-top: -50%;
+    transform-origin: center calc(var(--lock-size) * .5);
+    border-radius: 4px;
+    background: linear-gradient(90deg, #171919, #88837a 45%, #d7c7ad 70%, #292a29);
+    box-shadow: 0 2px 5px rgba(0,0,0,.8);
+    opacity: 0;
+    transform: rotate(var(--angle)) translateY(calc(var(--lock-size) * -.04)) scaleX(0);
+  }
+  .piston-1 { --angle: 0deg; }
+  .piston-2 { --angle: 45deg; }
+  .piston-3 { --angle: 90deg; }
+  .piston-4 { --angle: 135deg; }
+  .piston-5 { --angle: 180deg; }
+  .piston-6 { --angle: 225deg; }
+  .piston-7 { --angle: 270deg; }
+  .piston-8 { --angle: 315deg; }
+
+  .og-vault.pistons-1 .piston-1,
+  .og-vault.pistons-2 .piston-2,
+  .og-vault.pistons-3 .piston-3,
+  .og-vault.pistons-4 .piston-4,
+  .og-vault.pistons-5 .piston-5,
+  .og-vault.pistons-6 .piston-6,
+  .og-vault.pistons-7 .piston-7,
+  .og-vault.pistons-8 .piston-8 {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateY(calc(var(--lock-size) * -.33)) scaleX(1);
+    transition: transform .22s cubic-bezier(.2,1.4,.4,1), opacity .08s ease;
+  }
+
+  .og-vault.rotating .lock-assembly {
+    transform: rotate(360deg);
+    transition: transform 1.25s cubic-bezier(.65,.05,.2,1);
+  }
+
+  .og-vault.opening .vault-door-left { transform: translateX(-100%); }
+  .og-vault.opening .vault-door-right { transform: translateX(100%); }
+
+  .og-vault.finished { opacity: 0; pointer-events: none; transition: opacity .8s ease .15s; }
+
+  .og-vault.opening .vault-interior { animation: vault-light .9s ease forwards; }
+  @keyframes vault-light {
+    0% { filter: brightness(.6); }
+    60% { filter: brightness(1.15); }
+    100% { filter: brightness(1); }
+  }
+
+  @media (max-width: 600px) {
+    :root { --lock-size: 150px; }
+    .lock-core span { font-size: 28px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .og-cursor, .og-status.denied { animation: none; }
+  }
+
+  @media (max-width: 480px) {
+    .og-page-title { font-size: 26px; }
+    .og-countdown-block { min-width: 46px; padding: 8px 10px; }
+    .og-countdown-block span { font-size: 18px; }
+  }
 </style>
 </head>
-
-
 <body>
 
 <script>
-  window.OG_SUPABASE_URL =
-    "https://mlgzjqrcuwubwgxqgumb.supabase.co";
-
-  window.OG_SUPABASE_PUBLISHABLE_KEY =
-    "sb_publishable_URxO2i1iv3iw-taxs5TcRg_MjFVFYHJ";
+  // ============================================
+  // 🔑 À FAIRE AVANT DE PUBLIER : colle ta clé ci-dessous
+  // ============================================
+  window.OG_SUPABASE_URL = "https://mlgzjqrcuwubwgxqgumb.supabase.co";
+  window.OG_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_URxO2i1iv3iw-taxs5TcRg_MjFVFYHJ";
 </script>
 
+  <div class="og-terminal-wrap">
+    <h1 class="og-page-title">PROJET OG</h1>
 
-<!-- =========================================================
-     PAGE PRINCIPALE
-========================================================= -->
-
-<div class="og-terminal-wrap">
-
-  <h1 class="og-page-title">
-    PROJET OG
-  </h1>
-
-
-  <!-- LOGIN -->
-
-  <div class="og-terminal">
-
-    <form id="og-login-form">
-
-      <div class="og-field">
-
-        <label for="og-identifier">
-          IDENTIFIANT
-        </label>
-
-        <input
-          type="text"
-          id="og-identifier"
-          autocomplete="off"
-          required
-        >
-
-      </div>
-
-
-      <div class="og-field">
-
-        <label for="og-password">
-          MOT DE PASSE
-        </label>
-
-        <input
-          type="password"
-          id="og-password"
-          autocomplete="off"
-          required
-        >
-
-      </div>
-
-
-      <button
-        type="submit"
-        class="og-submit"
-      >
-        DÉVERROUILLER LE DOSSIER
-      </button>
-
-    </form>
-
-
-    <div
-      id="og-status"
-      class="og-status"
-    >
-      EN ATTENTE D'IDENTIFICATION
-      <span class="og-cursor"></span>
-    </div>
-
-  </div>
-
-
-  <!-- COUNTDOWN -->
-
-  <div
-    id="og-countdown-wrap"
-    class="og-countdown-wrap"
-  >
-
-    <div class="og-countdown-label">
-      COMPTE À REBOURS — 12/06/2027 11H00
-    </div>
-
-    <div class="og-countdown-grid">
-
-      <div class="og-countdown-block">
-        <span id="og-cd-days">000</span>
-        <small>JOURS</small>
-      </div>
-
-      <div class="og-countdown-block">
-        <span id="og-cd-hours">00</span>
-        <small>HEURES</small>
-      </div>
-
-      <div class="og-countdown-block">
-        <span id="og-cd-minutes">00</span>
-        <small>MIN</small>
-      </div>
-
-      <div class="og-countdown-block">
-        <span id="og-cd-seconds">00</span>
-        <small>SEC</small>
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- =====================================================
-       DASHBOARD
-  ====================================================== -->
-
-  <div
-    id="og-dashboard"
-    class="og-dashboard"
-  >
-
-    <div class="og-dashboard-header">
-      <strong>PROJET OG</strong>
-      — PAGE DE L'ÉVÉNEMENT
-    </div>
-
-
-    <div
-      id="og-dashboard-reveal"
-      class="og-dashboard-reveal"
-    ></div>
-
-
-    <!-- ÉQUIPES -->
-
-    <section class="og-section">
-
-      <h2 class="og-section-title">
-        ÉQUIPES
-      </h2>
-
-      <div id="og-teams-list"></div>
-
-
-      <div class="og-admin-only">
-
-        <button
-          type="button"
-          id="og-add-team-btn"
-          class="og-btn-small"
-        >
-          + AJOUTER UNE ÉQUIPE
-        </button>
-
-
-        <div
-          id="og-team-form"
-          class="og-form"
-          style="display:none"
-        >
-
-          <div
-            id="og-team-form-title"
-            class="og-form-title"
-          >
-            NOUVELLE ÉQUIPE
-          </div>
-
-
-          <label for="og-team-name">
-            Nom
-          </label>
-
-          <input
-            type="text"
-            id="og-team-name"
-          >
-
-
-          <label for="og-team-desc">
-            Description
-          </label>
-
-          <textarea
-            id="og-team-desc"
-          ></textarea>
-
-
-          <div class="og-form-buttons">
-
-            <button
-              type="button"
-              id="og-team-form-submit"
-              class="og-submit"
-            >
-              ENREGISTRER
-            </button>
-
-            <button
-              type="button"
-              id="og-team-form-cancel"
-              class="og-btn-small"
-            >
-              ANNULER
-            </button>
-
-          </div>
-
+    <div class="og-terminal">
+      <form id="og-login-form">
+        <div class="og-field">
+          <label for="og-identifier">IDENTIFIANT</label>
+          <input type="text" id="og-identifier" autocomplete="off" required>
         </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- ÉPREUVES -->
-
-    <section class="og-section">
-
-      <h2 class="og-section-title">
-        ÉPREUVES
-      </h2>
-
-      <div id="og-epreuves-list"></div>
-
-
-      <div class="og-admin-only">
-
-        <button
-          type="button"
-          id="og-add-epreuve-btn"
-          class="og-btn-small"
-        >
-          + AJOUTER UNE ÉPREUVE
-        </button>
-
-
-        <div
-          id="og-epreuve-form"
-          class="og-form"
-          style="display:none"
-        >
-
-          <div
-            id="og-epreuve-form-title"
-            class="og-form-title"
-          >
-            NOUVELLE ÉPREUVE
-          </div>
-
-
-          <label for="og-epreuve-title">
-            Titre
-          </label>
-
-          <input
-            type="text"
-            id="og-epreuve-title"
-          >
-
-
-          <label for="og-epreuve-desc">
-            Description
-          </label>
-
-          <textarea
-            id="og-epreuve-desc"
-          ></textarea>
-
-
-          <div class="og-form-buttons">
-
-            <button
-              type="button"
-              id="og-epreuve-form-submit"
-              class="og-submit"
-            >
-              ENREGISTRER
-            </button>
-
-            <button
-              type="button"
-              id="og-epreuve-form-cancel"
-              class="og-btn-small"
-            >
-              ANNULER
-            </button>
-
-          </div>
-
+        <div class="og-field">
+          <label for="og-password">MOT DE PASSE</label>
+          <input type="password" id="og-password" autocomplete="off" required>
         </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- PARTICIPANTS -->
-
-    <section class="og-section og-admin-only">
-
-      <h2 class="og-section-title">
-        PARTICIPANTS
-      </h2>
-
-      <div id="og-participants-list"></div>
-
-    </section>
-
-  </div>
-
-</div>
-
-
-<!-- =========================================================
-     COFFRE OG
-========================================================= -->
-
-<div
-  id="og-vault-overlay"
-  class="og-vault-overlay"
->
-
-
-  <!-- Intérieur -->
-
-  <div class="og-vault-interior"></div>
-
-
-  <!-- Porte gauche -->
-
-  <div
-    id="og-vault-door-left"
-    class="og-vault-door og-vault-door-left"
-  ></div>
-
-
-  <!-- Porte droite -->
-
-  <div
-    id="og-vault-door-right"
-    class="og-vault-door og-vault-door-right"
-  ></div>
-
-
-  <!-- =====================================================
-       SERRURE CENTRALE
-  ====================================================== -->
-
-  <div
-    id="og-vault-lock"
-    class="og-vault-lock"
-  >
-
-    <div class="og-lock-mechanism">
-
-
-      <!-- Anneaux -->
-
-      <div
-        class="og-lock-ring og-lock-ring-outer"
-      ></div>
-
-      <div
-        class="og-lock-ring og-lock-ring-middle"
-      ></div>
-
-      <div
-        class="og-lock-ring og-lock-ring-inner"
-      ></div>
-
-
-      <!-- 8 pistons -->
-
-      <div class="og-lock-piston og-piston-1"></div>
-      <div class="og-lock-piston og-piston-2"></div>
-      <div class="og-lock-piston og-piston-3"></div>
-      <div class="og-lock-piston og-piston-4"></div>
-      <div class="og-lock-piston og-piston-5"></div>
-      <div class="og-lock-piston og-piston-6"></div>
-      <div class="og-lock-piston og-piston-7"></div>
-      <div class="og-lock-piston og-piston-8"></div>
-
-
-      <!-- Centre OG -->
-
-      <div class="og-lock-core">
-        <span>OG</span>
-      </div>
-
+        <button type="submit" class="og-submit">DÉVERROUILLER LE DOSSIER</button>
+      </form>
+      <div id="og-status" class="og-status">EN ATTENTE D'IDENTIFICATION<span class="og-cursor"></span></div>
     </div>
 
+    <div id="og-countdown-wrap" class="og-countdown-wrap">
+      <div class="og-countdown-label">COMPTE À REBOURS — 12/06/2027 11H00</div>
+      <div class="og-countdown-grid">
+        <div class="og-countdown-block"><span id="og-cd-days">000</span><small>JOURS</small></div>
+        <div class="og-countdown-block"><span id="og-cd-hours">00</span><small>HEURES</small></div>
+        <div class="og-countdown-block"><span id="og-cd-minutes">00</span><small>MIN</small></div>
+        <div class="og-countdown-block"><span id="og-cd-seconds">00</span><small>SEC</small></div>
+      </div>
+    </div>
+
+    <div id="og-dashboard" class="og-dashboard">
+      <div class="og-dashboard-header"><strong>PROJET OG</strong> — PAGE DE L'ÉVÉNEMENT</div>
+      <div id="og-dashboard-reveal" class="og-dashboard-reveal"></div>
+
+      <section class="og-section">
+        <h2 class="og-section-title">ÉQUIPES</h2>
+        <div id="og-teams-list"></div>
+        <div class="og-admin-only">
+          <button type="button" id="og-add-team-btn" class="og-btn-small">+ AJOUTER UNE ÉQUIPE</button>
+          <div id="og-team-form" class="og-form" style="display:none">
+            <div id="og-team-form-title" class="og-form-title">NOUVELLE ÉQUIPE</div>
+            <label for="og-team-name">Nom</label>
+            <input type="text" id="og-team-name">
+            <label for="og-team-desc">Description</label>
+            <textarea id="og-team-desc"></textarea>
+            <div class="og-form-buttons">
+              <button type="button" id="og-team-form-submit" class="og-submit">ENREGISTRER</button>
+              <button type="button" id="og-team-form-cancel" class="og-btn-small">ANNULER</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="og-section">
+        <h2 class="og-section-title">ÉPREUVES</h2>
+        <div id="og-epreuves-list"></div>
+        <div class="og-admin-only">
+          <button type="button" id="og-add-epreuve-btn" class="og-btn-small">+ AJOUTER UNE ÉPREUVE</button>
+          <div id="og-epreuve-form" class="og-form" style="display:none">
+            <div id="og-epreuve-form-title" class="og-form-title">NOUVELLE ÉPREUVE</div>
+            <label for="og-epreuve-title">Titre</label>
+            <input type="text" id="og-epreuve-title">
+            <label for="og-epreuve-desc">Description</label>
+            <textarea id="og-epreuve-desc"></textarea>
+            <div class="og-form-buttons">
+              <button type="button" id="og-epreuve-form-submit" class="og-submit">ENREGISTRER</button>
+              <button type="button" id="og-epreuve-form-cancel" class="og-btn-small">ANNULER</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="og-section og-admin-only">
+        <h2 class="og-section-title">PARTICIPANTS</h2>
+        <div id="og-participants-list"></div>
+      </section>
+    </div>
   </div>
 
-</div>
-
+  <div id="og-vault" class="og-vault">
+    <div class="vault-frame">
+      <div class="vault-door vault-door-left">
+        <div class="og-lock">
+          <div class="lock-assembly">
+            <div class="lock-ring lock-ring-outer"></div>
+            <div class="lock-ring lock-ring-middle"></div>
+            <div class="lock-ring lock-ring-inner"></div>
+            <div class="lock-piston piston-1"></div>
+            <div class="lock-piston piston-2"></div>
+            <div class="lock-piston piston-3"></div>
+            <div class="lock-piston piston-4"></div>
+            <div class="lock-piston piston-5"></div>
+            <div class="lock-piston piston-6"></div>
+            <div class="lock-piston piston-7"></div>
+            <div class="lock-piston piston-8"></div>
+            <div class="lock-core"><span>OG</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="vault-door vault-door-right"></div>
+      <div class="vault-interior">
+        <div class="vault-interior-light"></div>
+      </div>
+    </div>
+  </div>
 
 <script>
+function openOGVault() {
+  const vault = document.getElementById("og-vault");
+  if (!vault) return;
 
+  vault.style.display = "block";
+
+  if (vault.classList.contains("animating")) {
+    return;
+  }
+  vault.classList.add("animating");
+
+  let piston = 1;
+  const pistonInterval = setInterval(() => {
+    vault.classList.add(`pistons-${piston}`);
+    piston++;
+    if (piston > 8) {
+      clearInterval(pistonInterval);
+      setTimeout(() => {
+        vault.classList.add("rotating");
+        setTimeout(() => {
+          vault.classList.add("opening");
+          setTimeout(() => {
+            vault.classList.add("finished");
+            setTimeout(() => {
+              vault.style.display = "none";
+            }, 900);
+          }, 1450);
+        }, 450);
+      }, 350);
+    }
+  }, 120);
+}
+
+function resetOGVault() {
+  const vault = document.getElementById("og-vault");
+  if (!vault) return;
+  vault.style.display = "block";
+  vault.classList.remove(
+    "animating", "pistons-1", "pistons-2", "pistons-3", "pistons-4",
+    "pistons-5", "pistons-6", "pistons-7", "pistons-8",
+    "rotating", "opening", "finished"
+  );
+}
+</script>
+
+<script>
 (function () {
-
-  const SUPABASE_URL =
-    window.OG_SUPABASE_URL;
-
-  const SUPABASE_PUBLISHABLE_KEY =
-    window.OG_SUPABASE_PUBLISHABLE_KEY;
-
+  const SUPABASE_URL = window.OG_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = window.OG_SUPABASE_PUBLISHABLE_KEY;
 
   const appState = {
-
     role: null,
-
     reveal: "",
-
     teams: [],
-
     epreuves: [],
-
     participants: [],
-
     adminIdentifier: null,
-
     adminPassword: null,
-
     editingTeamId: null,
-
     editingEpreuveId: null,
-
   };
 
+  const form = document.getElementById("og-login-form");
+  const statusEl = document.getElementById("og-status");
+  const terminalEl = document.querySelector(".og-terminal");
+  const pageTitleEl = document.querySelector(".og-page-title");
+  const countdownWrapEl = document.getElementById("og-countdown-wrap");
+  const dashboardEl = document.getElementById("og-dashboard");
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const form =
-    document.getElementById("og-login-form");
-
-  const statusEl =
-    document.getElementById("og-status");
-
-  const terminalEl =
-    document.querySelector(".og-terminal");
-
-  const pageTitleEl =
-    document.querySelector(".og-page-title");
-
-  const countdownWrapEl =
-    document.getElementById("og-countdown-wrap");
-
-  const dashboardEl =
-    document.getElementById("og-dashboard");
-
-  const prefersReducedMotion =
-    window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-
-  /* =======================================================
-     COMPTE À REBOURS
-  ======================================================= */
-
-  const EVENT_DATE =
-    new Date("2027-06-12T11:00:00+02:00");
-
+  // ---------- Compte à rebours ----------
+  const EVENT_DATE = new Date("2027-06-12T11:00:00+02:00");
 
   function updateCountdown() {
-
     const now = new Date();
-
-    let diff =
-      EVENT_DATE.getTime() -
-      now.getTime();
-
-    if (diff < 0) {
-      diff = 0;
-    }
-
-    const days =
-      Math.floor(diff / 86400000);
-
-    const hours =
-      Math.floor(
-        (diff % 86400000) / 3600000
-      );
-
-    const minutes =
-      Math.floor(
-        (diff % 3600000) / 60000
-      );
-
-    const seconds =
-      Math.floor(
-        (diff % 60000) / 1000
-      );
-
-
-    document.getElementById(
-      "og-cd-days"
-    ).textContent =
-      String(days).padStart(3, "0");
-
-
-    document.getElementById(
-      "og-cd-hours"
-    ).textContent =
-      String(hours).padStart(2, "0");
-
-
-    document.getElementById(
-      "og-cd-minutes"
-    ).textContent =
-      String(minutes).padStart(2, "0");
-
-
-    document.getElementById(
-      "og-cd-seconds"
-    ).textContent =
-      String(seconds).padStart(2, "0");
-
+    let diff = EVENT_DATE.getTime() - now.getTime();
+    if (diff < 0) diff = 0;
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    document.getElementById("og-cd-days").textContent = String(days).padStart(3, "0");
+    document.getElementById("og-cd-hours").textContent = String(hours).padStart(2, "0");
+    document.getElementById("og-cd-minutes").textContent = String(minutes).padStart(2, "0");
+    document.getElementById("og-cd-seconds").textContent = String(seconds).padStart(2, "0");
   }
-
-
   updateCountdown();
+  setInterval(updateCountdown, 1000);
 
-  setInterval(
-    updateCountdown,
-    1000
-  );
-
-
-  /* =======================================================
-     UTILITAIRES
-  ======================================================= */
-
+  // ---------- Utilitaires ----------
   function escapeHtml(str) {
-
-    const div =
-      document.createElement("div");
-
-    div.textContent =
-      str == null ? "" : String(str);
-
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
     return div.innerHTML;
-
   }
-
 
   function scrambleReveal(finalText) {
-
     if (prefersReducedMotion) {
-
-      statusEl.textContent =
-        finalText;
-
+      statusEl.textContent = finalText;
       return;
-
     }
-
-
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
-
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
     const steps = 14;
-
     let frame = 0;
-
-
-    const timer =
-      setInterval(() => {
-
-        frame++;
-
-        const progress =
-          frame / steps;
-
-        let out = "";
-
-
-        for (
-          let i = 0;
-          i < finalText.length;
-          i++
-        ) {
-
-          const c =
-            finalText[i];
-
-          if (
-            c === "\n" ||
-            c === " " ||
-            i / finalText.length < progress
-          ) {
-
-            out += c;
-
-          } else {
-
-            out +=
-              chars[
-                Math.floor(
-                  Math.random() *
-                  chars.length
-                )
-              ];
-
-          }
-
+    const timer = setInterval(() => {
+      frame++;
+      const progress = frame / steps;
+      let out = "";
+      for (let i = 0; i < finalText.length; i++) {
+        const c = finalText[i];
+        if (c === "\n" || c === " " || i / finalText.length < progress) {
+          out += c;
+        } else {
+          out += chars[Math.floor(Math.random() * chars.length)];
         }
-
-
-        statusEl.textContent =
-          out;
-
-
-        if (frame >= steps) {
-
-          clearInterval(timer);
-
-        }
-
-      }, 900 / steps);
-
+      }
+      statusEl.textContent = out;
+      if (frame >= steps) clearInterval(timer);
+    }, 900 / steps);
   }
 
-
-  async function callFunction(
-    name,
-    payload
-  ) {
-
-    const res =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/${name}`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Authorization":
-              `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-          },
-
-          body:
-            JSON.stringify(payload),
-        }
-      );
-
-
-    const result =
-      await res.json();
-
-    return {
-      ok: res.ok,
-      result
-    };
-
+  async function callFunction(name, payload) {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+    return { ok: res.ok, result };
   }
 
-
-  /* =======================================================
-     RENDU DES ÉQUIPES
-  ======================================================= */
-
+  // ---------- Rendu des listes ----------
   function renderTeams() {
-
-    const container =
-      document.getElementById(
-        "og-teams-list"
-      );
-
+    const container = document.getElementById("og-teams-list");
     container.innerHTML = "";
-
-
     if (appState.teams.length === 0) {
-
-      const msg =
-        document.createElement("div");
-
-      msg.className =
-        "og-empty";
-
-      msg.textContent =
-        appState.role === "admin"
-          ? "Aucune équipe pour l'instant."
-          : "Aucune équipe révélée pour l'instant.";
-
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = appState.role === "admin" ? "Aucune équipe pour l'instant." : "Aucune équipe révélée pour l'instant.";
       container.appendChild(msg);
-
     }
-
-
     appState.teams.forEach((team) => {
-
-      const item =
-        document.createElement("div");
-
-      item.className =
-        "og-item" +
-        (
-          team.visible
-            ? ""
-            : " og-item-hidden"
-        );
-
-
-      let html =
-        '<div class="og-item-header"><strong>' +
-        escapeHtml(team.name) +
-        "</strong>";
-
-
-      if (
-        appState.role === "admin" &&
-        !team.visible
-      ) {
-
-        html +=
-          '<span class="og-badge">CACHÉ</span>';
-
-      }
-
-
+      const item = document.createElement("div");
+      item.className = "og-item" + (team.visible ? "" : " og-item-hidden");
+      let html = '<div class="og-item-header"><strong>' + escapeHtml(team.name) + "</strong>";
+      if (appState.role === "admin" && !team.visible) html += '<span class="og-badge">CACHÉ</span>';
       html += "</div>";
-
-
-      if (team.description) {
-
-        html +=
-          '<div class="og-item-desc">' +
-          escapeHtml(team.description) +
-          "</div>";
-
-      }
-
-
-      item.innerHTML =
-        html;
-
+      if (team.description) html += '<div class="og-item-desc">' + escapeHtml(team.description) + "</div>";
+      item.innerHTML = html;
 
       if (appState.role === "admin") {
+        const controls = document.createElement("div");
+        controls.className = "og-item-controls";
 
-        const controls =
-          document.createElement("div");
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "og-btn-small";
+        toggleBtn.textContent = team.visible ? "CACHER" : "RÉVÉLER";
+        toggleBtn.addEventListener("click", () => adminAction("toggle_team", team.id));
+        controls.appendChild(toggleBtn);
 
-        controls.className =
-          "og-item-controls";
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "og-btn-small";
+        editBtn.textContent = "MODIFIER";
+        editBtn.addEventListener("click", () => openTeamForm(team));
+        controls.appendChild(editBtn);
 
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "og-btn-small og-btn-danger";
+        deleteBtn.textContent = "SUPPRIMER";
+        deleteBtn.addEventListener("click", () => {
+          if (confirm("Supprimer l'équipe \"" + team.name + "\" ?")) adminAction("delete_team", team.id);
+        });
+        controls.appendChild(deleteBtn);
 
-        const toggleBtn =
-          document.createElement("button");
-
-        toggleBtn.type =
-          "button";
-
-        toggleBtn.className =
-          "og-btn-small";
-
-        toggleBtn.textContent =
-          team.visible
-            ? "CACHER"
-            : "RÉVÉLER";
-
-        toggleBtn.addEventListener(
-          "click",
-          () =>
-            adminAction(
-              "toggle_team",
-              team.id
-            )
-        );
-
-        controls.appendChild(
-          toggleBtn
-        );
-
-
-        const editBtn =
-          document.createElement("button");
-
-        editBtn.type =
-          "button";
-
-        editBtn.className =
-          "og-btn-small";
-
-        editBtn.textContent =
-          "MODIFIER";
-
-        editBtn.addEventListener(
-          "click",
-          () =>
-            openTeamForm(team)
-        );
-
-        controls.appendChild(
-          editBtn
-        );
-
-
-        const deleteBtn =
-          document.createElement("button");
-
-        deleteBtn.type =
-          "button";
-
-        deleteBtn.className =
-          "og-btn-small og-btn-danger";
-
-        deleteBtn.textContent =
-          "SUPPRIMER";
-
-
-        deleteBtn.addEventListener(
-          "click",
-          () => {
-
-            if (
-              confirm(
-                'Supprimer l’équipe "' +
-                team.name +
-                '" ?'
-              )
-            ) {
-
-              adminAction(
-                "delete_team",
-                team.id
-              );
-
-            }
-
-          }
-        );
-
-
-        controls.appendChild(
-          deleteBtn
-        );
-
-        item.appendChild(
-          controls
-        );
-
+        item.appendChild(controls);
       }
-
-
-      container.appendChild(
-        item
-      );
-
+      container.appendChild(item);
     });
-
   }
-
-
-  /* =======================================================
-     RENDU DES ÉPREUVES
-  ======================================================= */
 
   function renderEpreuves() {
-
-    const container =
-      document.getElementById(
-        "og-epreuves-list"
-      );
-
+    const container = document.getElementById("og-epreuves-list");
     container.innerHTML = "";
-
-
-    if (
-      appState.epreuves.length === 0
-    ) {
-
-      const msg =
-        document.createElement("div");
-
-      msg.className =
-        "og-empty";
-
-      msg.textContent =
-        appState.role === "admin"
-          ? "Aucune épreuve pour l'instant."
-          : "Aucune épreuve révélée pour l'instant.";
-
+    if (appState.epreuves.length === 0) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = appState.role === "admin" ? "Aucune épreuve pour l'instant." : "Aucune épreuve révélée pour l'instant.";
       container.appendChild(msg);
-
     }
+    appState.epreuves.forEach((epreuve) => {
+      const item = document.createElement("div");
+      item.className = "og-item" + (epreuve.visible ? "" : " og-item-hidden");
+      let html = '<div class="og-item-header"><strong>' + escapeHtml(epreuve.title) + "</strong>";
+      if (appState.role === "admin" && !epreuve.visible) html += '<span class="og-badge">CACHÉ</span>';
+      html += "</div>";
+      if (epreuve.description) html += '<div class="og-item-desc">' + escapeHtml(epreuve.description) + "</div>";
+      item.innerHTML = html;
 
+      if (appState.role === "admin") {
+        const controls = document.createElement("div");
+        controls.className = "og-item-controls";
 
-    appState.epreuves.forEach(
-      (epreuve) => {
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "og-btn-small";
+        toggleBtn.textContent = epreuve.visible ? "CACHER" : "RÉVÉLER";
+        toggleBtn.addEventListener("click", () => adminAction("toggle_epreuve", epreuve.id));
+        controls.appendChild(toggleBtn);
 
-        const item =
-          document.createElement("div");
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "og-btn-small";
+        editBtn.textContent = "MODIFIER";
+        editBtn.addEventListener("click", () => openEpreuveForm(epreuve));
+        controls.appendChild(editBtn);
 
-        item.className =
-          "og-item" +
-          (
-            epreuve.visible
-              ? ""
-              : " og-item-hidden"
-          );
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "og-btn-small og-btn-danger";
+        deleteBtn.textContent = "SUPPRIMER";
+        deleteBtn.addEventListener("click", () => {
+          if (confirm("Supprimer l'épreuve \"" + epreuve.title + "\" ?")) adminAction("delete_epreuve", epreuve.id);
+        });
+        controls.appendChild(deleteBtn);
 
-
-        let html =
-          '<div class="og-item-header"><strong>' +
-          escapeHtml(epreuve.title) +
-          "</strong>";
-
-
-        if (
-          appState.role === "admin" &&
-          !epreuve.visible
-        ) {
-
-          html +=
-            '<span class="og-badge">CACHÉ</span>';
-
-        }
-
-
-        html += "</div>";
-
-
-        if (epreuve.description) {
-
-          html +=
-            '<div class="og-item-desc">' +
-            escapeHtml(epreuve.description) +
-            "</div>";
-
-        }
-
-
-        item.innerHTML =
-          html;
-
-
-        if (appState.role === "admin") {
-
-          const controls =
-            document.createElement("div");
-
-          controls.className =
-            "og-item-controls";
-
-
-          const toggleBtn =
-            document.createElement("button");
-
-          toggleBtn.type =
-            "button";
-
-          toggleBtn.className =
-            "og-btn-small";
-
-          toggleBtn.textContent =
-            epreuve.visible
-              ? "CACHER"
-              : "RÉVÉLER";
-
-          toggleBtn.addEventListener(
-            "click",
-            () =>
-              adminAction(
-                "toggle_epreuve",
-                epreuve.id
-              )
-          );
-
-          controls.appendChild(
-            toggleBtn
-          );
-
-
-          const editBtn =
-            document.createElement("button");
-
-          editBtn.type =
-            "button";
-
-          editBtn.className =
-            "og-btn-small";
-
-          editBtn.textContent =
-            "MODIFIER";
-
-          editBtn.addEventListener(
-            "click",
-            () =>
-              openEpreuveForm(epreuve)
-          );
-
-          controls.appendChild(
-            editBtn
-          );
-
-
-          const deleteBtn =
-            document.createElement("button");
-
-          deleteBtn.type =
-            "button";
-
-          deleteBtn.className =
-            "og-btn-small og-btn-danger";
-
-          deleteBtn.textContent =
-            "SUPPRIMER";
-
-
-          deleteBtn.addEventListener(
-            "click",
-            () => {
-
-              if (
-                confirm(
-                  'Supprimer l’épreuve "' +
-                  epreuve.title +
-                  '" ?'
-                )
-              ) {
-
-                adminAction(
-                  "delete_epreuve",
-                  epreuve.id
-                );
-
-              }
-
-            }
-          );
-
-
-          controls.appendChild(
-            deleteBtn
-          );
-
-
-          item.appendChild(
-            controls
-          );
-
-        }
-
-
-        container.appendChild(
-          item
-        );
-
+        item.appendChild(controls);
       }
-    );
-
+      container.appendChild(item);
+    });
   }
-
-
-  /* =======================================================
-     RENDU PARTICIPANTS
-  ======================================================= */
 
   function renderParticipants() {
-
-    const container =
-      document.getElementById(
-        "og-participants-list"
-      );
-
+    const container = document.getElementById("og-participants-list");
     container.innerHTML = "";
-
-
-    if (
-      appState.participants.length === 0
-    ) {
-
-      const msg =
-        document.createElement("div");
-
-      msg.className =
-        "og-empty";
-
-      msg.textContent =
-        "Aucun participant pour l'instant.";
-
+    if (appState.participants.length === 0) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = "Aucun participant pour l'instant.";
       container.appendChild(msg);
-
       return;
-
     }
+    appState.participants.forEach((p) => {
+      const item = document.createElement("div");
+      item.className = "og-item" + (p.visible ? "" : " og-item-hidden");
+      item.innerHTML =
+        '<div class="og-item-header"><strong>' + escapeHtml(p.username) + '</strong><span class="og-badge og-badge-role">' +
+        escapeHtml(p.role).toUpperCase() + "</span></div>";
 
+      const controls = document.createElement("div");
+      controls.className = "og-item-controls";
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "og-btn-small";
+      toggleBtn.textContent = p.visible ? "CACHER" : "RÉVÉLER";
+      toggleBtn.addEventListener("click", () => adminAction("toggle_participant", p.id));
+      controls.appendChild(toggleBtn);
+      item.appendChild(controls);
 
-    appState.participants.forEach(
-      (p) => {
-
-        const item =
-          document.createElement("div");
-
-        item.className =
-          "og-item" +
-          (
-            p.visible
-              ? ""
-              : " og-item-hidden"
-          );
-
-
-        item.innerHTML =
-          '<div class="og-item-header">' +
-          "<strong>" +
-          escapeHtml(p.username) +
-          "</strong>" +
-          '<span class="og-badge og-badge-role">' +
-          escapeHtml(p.role).toUpperCase() +
-          "</span></div>";
-
-
-        const controls =
-          document.createElement("div");
-
-        controls.className =
-          "og-item-controls";
-
-
-        const toggleBtn =
-          document.createElement("button");
-
-        toggleBtn.type =
-          "button";
-
-        toggleBtn.className =
-          "og-btn-small";
-
-        toggleBtn.textContent =
-          p.visible
-            ? "CACHER"
-            : "RÉVÉLER";
-
-        toggleBtn.addEventListener(
-          "click",
-          () =>
-            adminAction(
-              "toggle_participant",
-              p.id
-            )
-        );
-
-
-        controls.appendChild(
-          toggleBtn
-        );
-
-        item.appendChild(
-          controls
-        );
-
-        container.appendChild(
-          item
-        );
-
-      }
-    );
-
+      container.appendChild(item);
+    });
   }
 
-
-  /* =======================================================
-     ACTIONS ADMIN
-  ======================================================= */
-
-  async function adminAction(
-    action,
-    id,
-    fields
-  ) {
-
+  // ---------- Actions admin ----------
+  async function adminAction(action, id, fields) {
     try {
-
-      const {
-        ok,
-        result
-      } =
-        await callFunction(
-          "admin-manage",
-          {
-            adminIdentifier:
-              appState.adminIdentifier,
-
-            adminPassword:
-              appState.adminPassword,
-
-            action:
-              action,
-
-            id:
-              id || null,
-
-            fields:
-              fields || null,
-          }
-        );
-
-
+      const { ok, result } = await callFunction("admin-manage", {
+        adminIdentifier: appState.adminIdentifier,
+        adminPassword: appState.adminPassword,
+        action: action,
+        id: id || null,
+        fields: fields || null,
+      });
       if (!ok) {
-
-        alert(
-          result.error ||
-          "Une erreur est survenue."
-        );
-
+        alert(result.error || "Une erreur est survenue.");
         return;
-
       }
-
-
-      appState.teams =
-        result.teams || [];
-
-      appState.epreuves =
-        result.epreuves || [];
-
-      appState.participants =
-        result.participants || [];
-
-
+      appState.teams = result.teams || [];
+      appState.epreuves = result.epreuves || [];
+      appState.participants = result.participants || [];
       renderTeams();
       renderEpreuves();
       renderParticipants();
-
-
     } catch (err) {
-
-      alert(
-        "Erreur de connexion au serveur."
-      );
-
+      alert("Erreur de connexion au serveur.");
     }
-
   }
-
-
-  /* =======================================================
-     FORMULAIRE ÉQUIPE
-  ======================================================= */
 
   function openTeamForm(team) {
-
-    appState.editingTeamId =
-      team
-        ? team.id
-        : null;
-
-
-    document.getElementById(
-      "og-team-form-title"
-    ).textContent =
-      team
-        ? "MODIFIER L'ÉQUIPE"
-        : "NOUVELLE ÉQUIPE";
-
-
-    document.getElementById(
-      "og-team-name"
-    ).value =
-      team
-        ? team.name
-        : "";
-
-
-    document.getElementById(
-      "og-team-desc"
-    ).value =
-      team
-        ? (team.description || "")
-        : "";
-
-
-    document.getElementById(
-      "og-team-form"
-    ).style.display =
-      "block";
-
+    appState.editingTeamId = team ? team.id : null;
+    document.getElementById("og-team-form-title").textContent = team ? "MODIFIER L'ÉQUIPE" : "NOUVELLE ÉQUIPE";
+    document.getElementById("og-team-name").value = team ? team.name : "";
+    document.getElementById("og-team-desc").value = team ? (team.description || "") : "";
+    document.getElementById("og-team-form").style.display = "block";
   }
-
-
-  function closeTeamForm() {
-
-    document.getElementById(
-      "og-team-form"
-    ).style.display =
-      "none";
-
-  }
-
-
-  /* =======================================================
-     FORMULAIRE ÉPREUVE
-  ======================================================= */
+  function closeTeamForm() { document.getElementById("og-team-form").style.display = "none"; }
 
   function openEpreuveForm(epreuve) {
-
-    appState.editingEpreuveId =
-      epreuve
-        ? epreuve.id
-        : null;
-
-
-    document.getElementById(
-      "og-epreuve-form-title"
-    ).textContent =
-      epreuve
-        ? "MODIFIER L'ÉPREUVE"
-        : "NOUVELLE ÉPREUVE";
-
-
-    document.getElementById(
-      "og-epreuve-title"
-    ).value =
-      epreuve
-        ? epreuve.title
-        : "";
-
-
-    document.getElementById(
-      "og-epreuve-desc"
-    ).value =
-      epreuve
-        ? (epreuve.description || "")
-        : "";
-
-
-    document.getElementById(
-      "og-epreuve-form"
-    ).style.display =
-      "block";
-
+    appState.editingEpreuveId = epreuve ? epreuve.id : null;
+    document.getElementById("og-epreuve-form-title").textContent = epreuve ? "MODIFIER L'ÉPREUVE" : "NOUVELLE ÉPREUVE";
+    document.getElementById("og-epreuve-title").value = epreuve ? epreuve.title : "";
+    document.getElementById("og-epreuve-desc").value = epreuve ? (epreuve.description || "") : "";
+    document.getElementById("og-epreuve-form").style.display = "block";
   }
+  function closeEpreuveForm() { document.getElementById("og-epreuve-form").style.display = "none"; }
 
-
-  function closeEpreuveForm() {
-
-    document.getElementById(
-      "og-epreuve-form"
-    ).style.display =
-      "none";
-
-  }
-
-
-  /* =======================================================
-     BOUTONS ADMIN
-  ======================================================= */
-
-  document
-    .getElementById("og-add-team-btn")
-    .addEventListener(
-      "click",
-      () => openTeamForm(null)
-    );
-
-
-  document
-    .getElementById("og-team-form-cancel")
-    .addEventListener(
-      "click",
-      closeTeamForm
-    );
-
-
-  document
-    .getElementById("og-team-form-submit")
-    .addEventListener(
-      "click",
-      () => {
-
-        const name =
-          document
-            .getElementById("og-team-name")
-            .value
-            .trim();
-
-
-        const description =
-          document
-            .getElementById("og-team-desc")
-            .value
-            .trim();
-
-
-        if (!name) {
-          return;
-        }
-
-
-        if (
-          appState.editingTeamId
-        ) {
-
-          adminAction(
-            "update_team",
-            appState.editingTeamId,
-            {
-              name,
-              description
-            }
-          );
-
-        } else {
-
-          adminAction(
-            "create_team",
-            null,
-            {
-              name,
-              description
-            }
-          );
-
-        }
-
-
-        closeTeamForm();
-
-      }
-    );
-
-
-  document
-    .getElementById("og-add-epreuve-btn")
-    .addEventListener(
-      "click",
-      () => openEpreuveForm(null)
-    );
-
-
-  document
-    .getElementById("og-epreuve-form-cancel")
-    .addEventListener(
-      "click",
-      closeEpreuveForm
-    );
-
-
-  document
-    .getElementById("og-epreuve-form-submit")
-    .addEventListener(
-      "click",
-      () => {
-
-        const title =
-          document
-            .getElementById("og-epreuve-title")
-            .value
-            .trim();
-
-
-        const description =
-          document
-            .getElementById("og-epreuve-desc")
-            .value
-            .trim();
-
-
-        if (!title) {
-          return;
-        }
-
-
-        if (
-          appState.editingEpreuveId
-        ) {
-
-          adminAction(
-            "update_epreuve",
-            appState.editingEpreuveId,
-            {
-              title,
-              description
-            }
-          );
-
-        } else {
-
-          adminAction(
-            "create_epreuve",
-            null,
-            {
-              title,
-              description
-            }
-          );
-
-        }
-
-
-        closeEpreuveForm();
-
-      }
-    );
-
-
-  /* =======================================================
-     ANIMATION DU COFFRE OG
-  ======================================================= */
-
-  function playVaultAnimation(
-    onComplete
-  ) {
-
-    const overlay =
-      document.getElementById(
-        "og-vault-overlay"
-      );
-
-
-    if (prefersReducedMotion) {
-
-      onComplete();
-
-      return;
-
+  document.getElementById("og-add-team-btn").addEventListener("click", () => openTeamForm(null));
+  document.getElementById("og-team-form-cancel").addEventListener("click", closeTeamForm);
+  document.getElementById("og-team-form-submit").addEventListener("click", () => {
+    const name = document.getElementById("og-team-name").value.trim();
+    const description = document.getElementById("og-team-desc").value.trim();
+    if (!name) return;
+    if (appState.editingTeamId) {
+      adminAction("update_team", appState.editingTeamId, { name, description });
+    } else {
+      adminAction("create_team", null, { name, description });
     }
+    closeTeamForm();
+  });
 
-
-    /*
-     * Reset complet
-     */
-
-    overlay.className =
-      "og-vault-overlay";
-
-
-    overlay.style.display =
-      "block";
-
-
-    document.body.style.overflow =
-      "hidden";
-
-
-    /*
-     * ==========================================
-     * PHASE 1
-     *
-     * Les 8 pistons sortent
-     * un par un.
-     * ==========================================
-     */
-
-    let piston = 1;
-
-
-    const pistonInterval =
-      setInterval(
-        function () {
-
-          overlay.classList.add(
-            "piston-" + piston
-          );
-
-
-          piston++;
-
-
-          if (piston > 8) {
-
-            clearInterval(
-              pistonInterval
-            );
-
-
-            /*
-             * Petite pause mécanique
-             */
-
-            setTimeout(
-              function () {
-
-
-                /*
-                 * =================================
-                 * PHASE 2
-                 *
-                 * Rotation complète
-                 * de la serrure.
-                 * =================================
-                 */
-
-                overlay.classList.add(
-                  "og-lock-rotating"
-                );
-
-
-                /*
-                 * =================================
-                 * PHASE 3
-                 *
-                 * Ouverture des portes.
-                 * =================================
-                 */
-
-                setTimeout(
-                  function () {
-
-                    overlay.classList.add(
-                      "og-vault-opening"
-                    );
-
-
-                    /*
-                     * =================================
-                     * PHASE 4
-                     *
-                     * Fin de l'ouverture.
-                     * =================================
-                     */
-
-                    setTimeout(
-                      function () {
-
-                        overlay.classList.add(
-                          "og-vault-finished"
-                        );
-
-
-                        /*
-                         * Fin du fondu.
-                         */
-
-                        setTimeout(
-                          function () {
-
-                            overlay.style.display =
-                              "none";
-
-
-                            document.body.style.overflow =
-                              "";
-
-
-                            onComplete();
-
-                          },
-                          700
-                        );
-
-                      },
-                      1450
-                    );
-
-                  },
-                  400
-                );
-
-              },
-              350
-            );
-
-          }
-
-        },
-        135
-      );
-
-  }
-
-
-  /* =======================================================
-     PRÉPARATION DU DASHBOARD
-  ======================================================= */
+  document.getElementById("og-add-epreuve-btn").addEventListener("click", () => openEpreuveForm(null));
+  document.getElementById("og-epreuve-form-cancel").addEventListener("click", closeEpreuveForm);
+  document.getElementById("og-epreuve-form-submit").addEventListener("click", () => {
+    const title = document.getElementById("og-epreuve-title").value.trim();
+    const description = document.getElementById("og-epreuve-desc").value.trim();
+    if (!title) return;
+    if (appState.editingEpreuveId) {
+      adminAction("update_epreuve", appState.editingEpreuveId, { title, description });
+    } else {
+      adminAction("create_epreuve", null, { title, description });
+    }
+    closeEpreuveForm();
+  });
 
   function prepareDashboard() {
-
-    pageTitleEl.style.display =
-      "none";
-
-
-    terminalEl.style.display =
-      "none";
-
-
-    countdownWrapEl.style.display =
-      "none";
-
-
-    dashboardEl.style.display =
-      "block";
-
-
-    document.getElementById(
-      "og-dashboard-reveal"
-    ).textContent =
-      appState.reveal || "";
-
-
-    if (
-      appState.role === "admin"
-    ) {
-
-      dashboardEl.classList.add(
-        "og-is-admin"
-      );
-
-    }
-
-
+    pageTitleEl.style.display = "none";
+    terminalEl.style.display = "none";
+    countdownWrapEl.style.display = "none";
+    dashboardEl.style.display = "block";
+    document.getElementById("og-dashboard-reveal").textContent = appState.reveal || "";
+    if (appState.role === "admin") dashboardEl.classList.add("og-is-admin");
     renderTeams();
     renderEpreuves();
-
-
-    if (
-      appState.role === "admin"
-    ) {
-
-      renderParticipants();
-
-    }
-
+    if (appState.role === "admin") renderParticipants();
   }
 
+  // ---------- Connexion ----------
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const identifier = document.getElementById("og-identifier").value.trim();
+    const password = document.getElementById("og-password").value;
 
-  /* =======================================================
-     CONNEXION
-  ======================================================= */
+    statusEl.className = "og-status";
+    statusEl.textContent = "VÉRIFICATION EN COURS...";
 
-  form.addEventListener(
-    "submit",
-    async function (e) {
+    try {
+      const { ok, result } = await callFunction("login", { identifier, password });
 
-      e.preventDefault();
-
-
-      const identifier =
-        document
-          .getElementById("og-identifier")
-          .value
-          .trim();
-
-
-      const password =
-        document
-          .getElementById("og-password")
-          .value;
-
-
-      statusEl.className =
-        "og-status";
-
-
-      statusEl.textContent =
-        "VÉRIFICATION EN COURS...";
-
-
-      try {
-
-        const {
-          ok,
-          result
-        } =
-          await callFunction(
-            "login",
-            {
-              identifier,
-              password
-            }
-          );
-
-
-        /*
-         * ==============================
-         * CONNEXION REFUSÉE
-         * ==============================
-         */
-
-        if (!ok) {
-
-          statusEl.className =
-            "og-status denied";
-
-
-          statusEl.textContent =
-            "ACCÈS REFUSÉ — " +
-            (
-              result.error ||
-              "IDENTIFIANTS INVALIDES"
-            );
-
-
-          return;
-
-        }
-
-
-        /*
-         * ==============================
-         * CONNEXION ACCEPTÉE
-         * ==============================
-         */
-
-        appState.role =
-          result.role;
-
-
-        appState.reveal =
-          result.reveal;
-
-
-        appState.teams =
-          result.teams || [];
-
-
-        appState.epreuves =
-          result.epreuves || [];
-
-
-        appState.participants =
-          result.participants || [];
-
-
-        if (
-          result.role === "admin"
-        ) {
-
-          appState.adminIdentifier =
-            identifier;
-
-          appState.adminPassword =
-            password;
-
-        }
-
-
-        statusEl.className =
-          "og-status granted";
-
-
-        const label =
-          result.role === "admin"
-            ? "ACCÈS ADMINISTRATEUR"
-            : "ACCÈS AUTORISÉ";
-
-
-        scrambleReveal(
-          label +
-          "\n" +
-          result.reveal
-        );
-
-
-        /*
-         * Désactivation du formulaire
-         */
-
-        form
-          .querySelectorAll(
-            "input, button"
-          )
-          .forEach(
-            function (el) {
-
-              el.disabled =
-                true;
-
-            }
-          );
-
-
-        /*
-         * ==============================
-         * DASHBOARD DERRIÈRE LE COFFRE
-         * ==============================
-         *
-         * Le dashboard est préparé
-         * avant l'animation.
-         *
-         * L'utilisateur ne le voit pas
-         * encore car le coffre est au-dessus.
-         */
-
-        setTimeout(
-          function () {
-
-            prepareDashboard();
-
-            playVaultAnimation(
-              function () {}
-            );
-
-          },
-          1100
-        );
-
-
-      } catch (err) {
-
-        statusEl.className =
-          "og-status denied";
-
-
-        statusEl.textContent =
-          "ERREUR DE CONNEXION AU SYSTÈME — RÉESSAIE";
-
+      if (!ok) {
+        statusEl.className = "og-status denied";
+        statusEl.textContent = "ACCÈS REFUSÉ — " + (result.error || "IDENTIFIANTS INVALIDES");
+        return;
       }
 
+      appState.role = result.role;
+      appState.reveal = result.reveal;
+      appState.teams = result.teams || [];
+      appState.epreuves = result.epreuves || [];
+      appState.participants = result.participants || [];
+      if (result.role === "admin") {
+        appState.adminIdentifier = identifier;
+        appState.adminPassword = password;
+      }
+
+      statusEl.className = "og-status granted";
+      const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
+      scrambleReveal(label + "\n" + result.reveal);
+      form.querySelectorAll("input, button").forEach(function (el) { el.disabled = true; });
+
+      setTimeout(function () {
+        prepareDashboard();
+        openOGVault();
+      }, 1100);
+    } catch (err) {
+      statusEl.className = "og-status denied";
+      statusEl.textContent = "ERREUR DE CONNEXION AU SYSTÈME — RÉESSAIE";
     }
-  );
-
+  });
 })();
-
 </script>
 
 </body>
