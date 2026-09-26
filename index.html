@@ -387,13 +387,14 @@
     position: absolute;
     left: 50%; top: 50%;
     width: var(--piston-length);
-    height: clamp(8px, 1vw, 13px);
+    height: clamp(10px, 1.3vw, 15px);
     margin-left: calc(var(--piston-length) * -.5);
     margin-top: -50%;
     transform-origin: center calc(var(--lock-size) * .5);
     border-radius: 4px;
-    background: linear-gradient(90deg, #171919, #6b665c 40%, #f0dfc0 75%, #d7c7ad 88%, #171919);
-    box-shadow: 0 0 10px 2px rgba(240,223,192,.45), 0 2px 5px rgba(0,0,0,.8);
+    background: linear-gradient(90deg, #4a463c 0%, #8f8770 30%, #c9b896 60%, #f0dfc0 85%, #fff8e8 100%);
+    border: 1px solid rgba(0,0,0,.4);
+    box-shadow: 0 0 10px 2px rgba(240,223,192,.4), 0 2px 5px rgba(0,0,0,.8);
     opacity: 0;
     transform: rotate(var(--angle)) translateY(calc(var(--lock-size) * -.04)) scaleX(0);
   }
@@ -449,7 +450,7 @@
   }
 
   @media (max-width: 600px) {
-    :root { --lock-size: 150px; }
+    :root { --lock-size: 160px; --piston-length: 34px; }
     .lock-core span { font-size: 28px; }
   }
 
