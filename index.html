@@ -388,14 +388,13 @@
     left: 50%; top: 50%;
     width: var(--piston-length);
     height: clamp(4px, 0.6vw, 6px);
-    margin-left: calc(var(--piston-length) * -.5);
-    margin-top: -50%;
-    transform-origin: center calc(var(--lock-size) * .5);
+    margin-top: calc(clamp(4px, 0.6vw, 6px) * -.5);
+    transform-origin: left center;
     border-radius: 999px;
     background: linear-gradient(90deg, rgba(232,147,58,.55), rgba(232,147,58,.8) 55%, rgba(232,147,58,1) 100%);
     box-shadow: 0 0 6px 1px rgba(232,147,58,.45);
     opacity: 0;
-    transform: rotate(var(--angle)) translateY(calc(var(--lock-size) * -.04)) scaleX(0);
+    transform: rotate(var(--angle)) translateX(calc(var(--lock-size) * .47)) scaleX(0);
   }
   .lock-piston::after {
     content: "";
@@ -427,7 +426,7 @@
   .og-vault.pistons-7 .piston-7,
   .og-vault.pistons-8 .piston-8 {
     opacity: 1;
-    transform: rotate(var(--angle)) translateY(calc(var(--lock-size) * -.33)) scaleX(1);
+    transform: rotate(var(--angle)) translateX(calc(var(--lock-size) * .47)) scaleX(1);
     transition: transform .22s cubic-bezier(.2,1.4,.4,1), opacity .08s ease;
   }
 
