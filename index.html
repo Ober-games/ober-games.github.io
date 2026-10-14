@@ -157,7 +157,7 @@
   }
 
   /* Dashboard (post-login "real page") */
-  .og-dashboard { display: none; width: 100%; max-width: 640px; color: var(--amber); }
+  .og-dashboard { display: none; width: 100%; max-width: 760px; color: var(--amber); }
   .og-dashboard-header {
     font-size: 13px;
     letter-spacing: 0.06em;
@@ -169,24 +169,41 @@
   .og-dashboard-header strong { color: var(--amber); }
   .og-dashboard-reveal { font-size: 12px; color: var(--amber-dim); margin-bottom: 24px; }
 
-  .og-section { margin-bottom: 32px; }
+  .og-section { margin-bottom: 36px; }
   .og-section-title {
-    font-size: 13px;
-    letter-spacing: 0.08em;
+    font-size: 15px;
+    letter-spacing: 0.06em;
     color: var(--amber);
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     border-bottom: 1px solid var(--amber-dim);
     padding-bottom: 8px;
   }
 
+  #og-teams-list, #og-epreuves-list, #og-participants-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
   .og-item {
+    position: relative;
+    overflow: hidden;
     border: 1px solid var(--amber-dim);
-    border-radius: 4px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
+    border-radius: 8px;
+    padding: 16px 14px 12px;
     font-size: 13px;
+    background: linear-gradient(160deg, rgba(232,147,58,.07), transparent 65%), var(--panel);
+  }
+  .og-item::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--amber);
+    opacity: .65;
   }
   .og-item-hidden { opacity: 0.55; border-style: dashed; }
+  .og-item-hidden::before { opacity: .25; }
   .og-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .og-item-desc { color: var(--amber-dim); margin-top: 4px; font-size: 12px; line-height: 1.5; }
   .og-badge {
@@ -242,7 +259,7 @@
   .og-form-buttons { display: flex; gap: 8px; margin-top: 12px; }
   .og-form-buttons .og-submit { margin-top: 0; }
 
-  .og-empty { color: var(--amber-dim); font-size: 12px; font-style: italic; }
+  .og-empty { grid-column: 1 / -1; color: var(--amber-dim); font-size: 12px; font-style: italic; }
 
   /* =========================================================
      OG VAULT
