@@ -75,6 +75,35 @@
   }
   .og-field input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 
+  /* Mot de passe : petit œil pour afficher / masquer */
+  .og-pw-wrap { position: relative; }
+  .og-pw-wrap input { padding-right: 40px; }
+  .og-eye {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: var(--amber-dim);
+    cursor: pointer;
+  }
+  .og-eye:hover, .og-eye.og-on { color: var(--amber); }
+  .og-eye:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .og-eye:disabled { opacity: 0.5; cursor: default; }
+  .og-eye svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .og-eye .og-eye-off { display: none; }
+  .og-eye.og-on .og-eye-open { display: none; }
+  .og-eye.og-on .og-eye-off { display: block; }
+  /* Évite le doublon avec l'œil intégré d'Edge */
+  input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
+
   .og-submit {
     position: relative;
     width: 100%;
@@ -293,7 +322,13 @@
         </div>
         <div class="og-field">
           <label for="og-password">MOT DE PASSE</label>
-          <input type="password" id="og-password" autocomplete="off" required>
+          <div class="og-pw-wrap">
+            <input type="password" id="og-password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+            <button type="button" id="og-pw-toggle" class="og-eye" aria-label="Afficher le mot de passe" aria-pressed="false" title="Afficher le mot de passe">
+              <svg class="og-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="og-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
         </div>
         <button type="submit" class="og-submit">DÉVERROUILLER LE DOSSIER</button>
       </form>
@@ -360,7 +395,7 @@
   </div>
 
 <!-- Animation du coffre (3D) : le fichier vault-og.js doit être dans le même dossier que index.html -->
-<script src="vault-og.js?v=1"></script>
+<script src="vault-og.js?v=2"></script>
 <script>
   // Prépare le coffre en arrière-plan pendant que le visiteur est sur la page de connexion
   window.addEventListener("load", function () {
@@ -394,6 +429,22 @@
   const countdownWrapEl = document.getElementById("og-countdown-wrap");
   const dashboardEl = document.getElementById("og-dashboard");
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Afficher / masquer le mot de passe ----------
+  const pwInput = document.getElementById("og-password");
+  const pwToggle = document.getElementById("og-pw-toggle");
+  function setPasswordVisible(show) {
+    pwInput.type = show ? "text" : "password";
+    pwToggle.classList.toggle("og-on", show);
+    pwToggle.setAttribute("aria-pressed", show ? "true" : "false");
+    pwToggle.title = show ? "Masquer le mot de passe" : "Afficher le mot de passe";
+  }
+  pwToggle.addEventListener("click", function () {
+    setPasswordVisible(pwInput.type === "password");
+    pwInput.focus();
+    const end = pwInput.value.length;
+    try { pwInput.setSelectionRange(end, end); } catch (err) {}
+  });
 
   // ---------- Compte à rebours ----------
   const EVENT_DATE = new Date("2027-06-12T11:00:00+02:00");
@@ -709,6 +760,7 @@
       const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
       scrambleReveal(label + "\n" + result.reveal);
       form.querySelectorAll("input, button").forEach(function (el) { el.disabled = true; });
+      setPasswordVisible(false);
 
       setTimeout(function () {
         if (window.VaultOG) {
