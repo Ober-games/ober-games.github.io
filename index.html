@@ -299,6 +299,24 @@
     .og-countdown-block { min-width: 46px; padding: 8px 10px; }
     .og-countdown-block span { font-size: 18px; }
   }
+
+  /* =========================================================
+     MOBILE uniquement (téléphones, écrans tactiles, fenêtres étroites)
+     Les champs font au moins 16 px : en dessous, iOS zoome sur la page à chaque saisie.
+  ========================================================= */
+  @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    .og-terminal-wrap { min-height: 100vh; min-height: 100dvh; padding: 32px 16px; }
+    .og-terminal { max-width: 560px; padding: 30px 22px; }
+    .og-field { margin-bottom: 26px; }
+    .og-field label { font-size: 14px; margin-bottom: 8px; }
+    .og-field input { font-size: 18px; padding: 10px 2px; min-height: 46px; }
+    .og-pw-wrap input { padding-right: 54px; }
+    .og-eye { width: 46px; height: 46px; touch-action: manipulation; }
+    .og-eye svg { width: 24px; height: 24px; }
+    .og-submit { font-size: 15px; padding: 16px 12px; min-height: 54px; margin-top: 12px; touch-action: manipulation; }
+    .og-status { font-size: 14px; min-height: 40px; }
+  }
 </style>
 </head>
 <body>
@@ -395,7 +413,7 @@
   </div>
 
 <!-- Animation du coffre (3D) : le fichier vault-og.js doit être dans le même dossier que index.html -->
-<script src="vault-og.js?v=2"></script>
+<script src="vault-og.js?v=3"></script>
 <script>
   // Prépare le coffre en arrière-plan pendant que le visiteur est sur la page de connexion
   window.addEventListener("load", function () {
