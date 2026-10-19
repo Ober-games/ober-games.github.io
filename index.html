@@ -317,6 +317,61 @@
     .og-submit { font-size: 15px; padding: 16px 12px; min-height: 54px; margin-top: 12px; touch-action: manipulation; }
     .og-status { font-size: 14px; min-height: 40px; }
   }
+
+  /* =========================================================
+     CARTES DES AGENTS (présentation avant le site)
+  ========================================================= */
+  .og-cards { position: fixed; inset: 0; z-index: 9000; display: none; flex-direction: column; background: var(--bg); transition: opacity .8s ease; }
+  .og-cards.og-out { opacity: 0; pointer-events: none; }
+  .og-cards-top { text-align: center; padding: 22px 12px 6px; }
+  .og-cards-top h1 { margin: 0; font-size: clamp(18px, 5vw, 28px); letter-spacing: 0.1em; color: var(--amber); text-shadow: 0 0 16px rgba(232,147,58,.35); }
+  .og-cards-top p { margin: 4px 0 0; font-size: 11px; letter-spacing: 0.08em; color: var(--amber-dim); }
+  .og-cards-wall { flex: 1; min-height: 0; display: flex; overflow: auto; transition: opacity .7s, filter .7s; }
+  .og-cards-wall.og-dim { opacity: .22; filter: blur(1.5px); }
+  .og-cards-grid { margin: auto; display: grid; grid-template-columns: repeat(var(--cols, 6), var(--w, 90px)); gap: var(--g, 8px); padding: var(--g, 8px); width: max-content; }
+  .og-card { position: relative; flex: none; width: var(--w); height: calc(var(--w) / .74); font-size: calc(var(--w) / 9); padding: .75em .7em; display: flex; flex-direction: column; gap: .7em; overflow: hidden; border: 1px solid var(--amber-dim); border-radius: .55em; background: linear-gradient(160deg, rgba(232,147,58,.08), transparent 60%), var(--panel); animation: og-card-in .5s cubic-bezier(.2,.7,.2,1) var(--d, 0ms) both; }
+  .og-card::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px); pointer-events: none; }
+  .og-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: .28em; background: var(--amber); opacity: .65; }
+  @keyframes og-card-in { from { opacity: 0; transform: perspective(500px) rotateY(80deg) scale(.9); } to { opacity: 1; transform: none; } }
+  @keyframes og-card-pulse { 0%, 100% { box-shadow: 0 0 0 rgba(232,147,58,0); } 50% { box-shadow: 0 0 22px rgba(232,147,58,.8); border-color: var(--amber); } }
+  .og-card.og-pulse { animation: og-card-pulse 1.3s ease-in-out 1; }
+  .og-card-head { font-weight: 600; font-size: 1.05em; letter-spacing: .05em; padding-bottom: .5em; border-bottom: 1px solid var(--amber-dim); }
+  .og-card-f span { display: block; font-size: .66em; letter-spacing: .08em; color: var(--amber-dim); }
+  .og-card-f b { display: block; margin-top: .15em; font-weight: 600; letter-spacing: .12em; color: var(--amber-dim); overflow-wrap: anywhere; }
+  .og-card.og-known .og-card-f b { color: var(--amber); letter-spacing: .04em; }
+  .og-card.og-big { position: fixed; z-index: 20; font-size: calc(var(--w) / 11); animation: none; border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber), 0 0 50px rgba(232,147,58,.3); transform-origin: center; }
+  .og-card.og-big .og-card-head { font-size: 1.15em; }
+  .og-card.og-big .og-card-f b { color: var(--amber); letter-spacing: .05em; }
+  .og-card.og-big.og-hid .og-card-f b { color: var(--amber-dim); letter-spacing: .2em; }
+  .og-ctrl { position: relative; z-index: 2; margin-top: auto; display: flex; align-items: center; justify-content: center; gap: .6em; padding: .7em; font: inherit; font-size: .8em; letter-spacing: .06em; color: var(--amber); background: transparent; border: 1px solid var(--amber-dim); border-radius: .3em; cursor: pointer; }
+  .og-ctrl:hover { border-color: var(--amber); }
+  .og-ctrl:disabled { opacity: .5; cursor: default; }
+  .og-ctrl svg { width: 1.5em; height: 1.5em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .og-ctrl .og-eye-off { display: none; }
+  .og-ctrl.og-on .og-eye-open { display: none; }
+  .og-ctrl.og-on .og-eye-off { display: block; }
+  .og-cards-act { min-height: 150px; padding: 8px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+  .og-cards-msg { margin: 0; min-height: 1.6em; font-size: 12px; line-height: 1.6; letter-spacing: .05em; color: var(--amber-dim); }
+  .og-cards-msg.og-good { color: var(--granted); }
+  .og-cards-msg.og-bad { color: var(--denied); }
+  .og-cards-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 520px; visibility: hidden; opacity: 0; transition: opacity .6s; }
+  .og-cards-btns.og-on { visibility: visible; opacity: 1; }
+  .og-cbtn { flex: 1 1 220px; min-height: 50px; padding: 14px 12px; font: inherit; font-size: 13px; letter-spacing: .06em; color: var(--amber); background: transparent; border: 1px solid var(--amber); cursor: pointer; transition: background .15s, color .15s; }
+  .og-cbtn:hover, .og-cbtn-pri { background: var(--amber); color: var(--bg); }
+  .og-cbtn:focus-visible, .og-ctrl:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .og-cbtn:disabled { opacity: .5; cursor: default; }
+  .og-form select { width: 100%; background: var(--bg); border: 1px solid var(--amber-dim); border-radius: 3px; color: var(--amber); font-family: inherit; font-size: 13px; padding: 8px; }
+  .og-form select:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  @media (max-height: 520px) {
+    .og-cards-top { padding: 6px; }
+    .og-cards-top p { display: none; }
+    .og-cards-act { min-height: 84px; gap: 6px; padding-top: 4px; }
+    .og-cbtn { min-height: 42px; padding: 8px; font-size: 12px; }
+  }
+  @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+    .og-form input, .og-form textarea, .og-form select { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .og-card { animation: none; } }
 </style>
 </head>
 <body>
@@ -408,8 +463,36 @@
       <section class="og-section og-admin-only">
         <h2 class="og-section-title">PARTICIPANTS</h2>
         <div id="og-participants-list"></div>
+        <div id="og-participant-form" class="og-form" style="display:none">
+          <div id="og-participant-form-title" class="og-form-title">MODIFIER LE PARTICIPANT</div>
+          <label for="og-participant-agent">Numéro d'agent</label>
+          <input type="number" id="og-participant-agent" min="1" step="1" inputmode="numeric">
+          <label for="og-participant-nom">Nom</label>
+          <input type="text" id="og-participant-nom">
+          <label for="og-participant-prenom">Prénom</label>
+          <input type="text" id="og-participant-prenom">
+          <label for="og-participant-team">Équipe</label>
+          <select id="og-participant-team"></select>
+          <div class="og-form-buttons">
+            <button type="button" id="og-participant-form-submit" class="og-submit">ENREGISTRER</button>
+            <button type="button" id="og-participant-form-cancel" class="og-btn-small">ANNULER</button>
+          </div>
+        </div>
       </section>
     </div>
+  </div>
+
+  <!-- Cartes des agents : présentation avant le site (tant que la participation n'est pas validée) -->
+  <div id="og-cards" class="og-cards" role="dialog" aria-label="Dossiers des agents">
+    <header class="og-cards-top"><h1>PROJET OG</h1><p>DOSSIERS DES AGENTS</p></header>
+    <div id="og-cards-wall" class="og-cards-wall"><div id="og-cards-grid" class="og-cards-grid"></div></div>
+    <footer class="og-cards-act">
+      <p id="og-cards-msg" class="og-cards-msg" aria-live="polite"></p>
+      <div id="og-cards-btns" class="og-cards-btns">
+        <button type="button" id="og-cards-validate" class="og-cbtn og-cbtn-pri">JE VALIDE MA PARTICIPATION</button>
+        <button type="button" id="og-cards-agenda" class="og-cbtn">JE VÉRIFIE MON AGENDA</button>
+      </div>
+    </footer>
   </div>
 
 <!-- Animation du coffre (3D) : le fichier vault-og.js doit être dans le même dossier que index.html -->
@@ -438,6 +521,11 @@
     adminPassword: null,
     editingTeamId: null,
     editingEpreuveId: null,
+    editingParticipantId: null,
+    me: null,
+    cards: [],
+    identifier: null,
+    password: null,
   };
 
   const form = document.getElementById("og-login-form");
@@ -642,12 +730,26 @@
       container.appendChild(msg);
       return;
     }
+    const teamName = function (id) {
+      const t = appState.teams.find(function (x) { return String(x.id) === String(id); });
+      return t ? t.name : "";
+    };
+    const STATUS = { pending: "EN ATTENTE", agenda: "AGENDA À VÉRIFIER", validated: "PARTICIPATION VALIDÉE" };
     appState.participants.forEach((p) => {
       const item = document.createElement("div");
       item.className = "og-item" + (p.visible ? "" : " og-item-hidden");
-      item.innerHTML =
+      let html =
         '<div class="og-item-header"><strong>' + escapeHtml(p.username) + '</strong><span class="og-badge og-badge-role">' +
         escapeHtml(p.role).toUpperCase() + "</span></div>";
+      if (p.role !== "admin") {
+        const fullName = ((p.prenom || "") + " " + (p.nom || "")).trim();
+        html += '<div class="og-item-desc">' +
+          (p.agent_number != null ? "AGENT #" + String(p.agent_number).padStart(2, "0") : "PAS DE NUMÉRO D'AGENT") + "<br>" +
+          escapeHtml(fullName || "nom non renseigné") + "<br>" +
+          escapeHtml(teamName(p.team_id) || "sans équipe") + "<br>" +
+          (STATUS[p.participation] || "") + "</div>";
+      }
+      item.innerHTML = html;
 
       const controls = document.createElement("div");
       controls.className = "og-item-controls";
@@ -655,10 +757,26 @@
       toggleBtn.type = "button";
       toggleBtn.className = "og-btn-small";
       toggleBtn.textContent = p.visible ? "CACHER" : "RÉVÉLER";
+      toggleBtn.title = "Dévoile ou cache la carte de cet agent aux autres joueurs";
       toggleBtn.addEventListener("click", () => adminAction("toggle_participant", p.id));
       controls.appendChild(toggleBtn);
+      if (p.role !== "admin") {
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "og-btn-small";
+        editBtn.textContent = "MODIFIER";
+        editBtn.addEventListener("click", () => openParticipantForm(p));
+        controls.appendChild(editBtn);
+        if (p.participation && p.participation !== "pending") {
+          const resetBtn = document.createElement("button");
+          resetBtn.type = "button";
+          resetBtn.className = "og-btn-small";
+          resetBtn.textContent = "REMETTRE EN ATTENTE";
+          resetBtn.addEventListener("click", () => adminAction("reset_participation", p.id));
+          controls.appendChild(resetBtn);
+        }
+      }
       item.appendChild(controls);
-
       container.appendChild(item);
     });
   }
@@ -746,6 +864,221 @@
     if (appState.role === "admin") renderParticipants();
   }
 
+  // ---------- Formulaire participant (admin) ----------
+  function openParticipantForm(p) {
+    appState.editingParticipantId = p.id;
+    document.getElementById("og-participant-form-title").textContent = "MODIFIER — " + p.username;
+    document.getElementById("og-participant-agent").value = p.agent_number != null ? p.agent_number : "";
+    document.getElementById("og-participant-nom").value = p.nom || "";
+    document.getElementById("og-participant-prenom").value = p.prenom || "";
+    const sel = document.getElementById("og-participant-team");
+    sel.innerHTML = '<option value="">— aucune équipe —</option>' +
+      appState.teams.map(function (t) { return '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.name) + "</option>"; }).join("");
+    sel.value = p.team_id || "";
+    const f = document.getElementById("og-participant-form");
+    f.style.display = "block";
+    if (f.scrollIntoView) f.scrollIntoView({ block: "nearest" });
+  }
+  function closeParticipantForm() { document.getElementById("og-participant-form").style.display = "none"; }
+  document.getElementById("og-participant-form-cancel").addEventListener("click", closeParticipantForm);
+  document.getElementById("og-participant-form-submit").addEventListener("click", function () {
+    const raw = document.getElementById("og-participant-agent").value.trim();
+    adminAction("update_participant", appState.editingParticipantId, {
+      agent_number: raw === "" ? null : Number(raw),
+      nom: document.getElementById("og-participant-nom").value.trim(),
+      prenom: document.getElementById("og-participant-prenom").value.trim(),
+      team_id: document.getElementById("og-participant-team").value || null,
+    });
+    closeParticipantForm();
+  });
+
+  // ---------- Cartes des agents (présentation avant le site) ----------
+  const cardsEl = document.getElementById("og-cards");
+  const cardsWall = document.getElementById("og-cards-wall");
+  const cardsGrid = document.getElementById("og-cards-grid");
+  const cardsMsg = document.getElementById("og-cards-msg");
+  const cardsBtns = document.getElementById("og-cards-btns");
+  const cardsBtnList = cardsBtns.querySelectorAll("button");
+  let cardsBig = null, cardsShown = false, cardsRun = 0;
+  const MASK = "????";
+  const wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  const padNum = function (n) { return String(n).padStart(2, "0"); };
+  const EYE = '<svg class="og-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+    '<svg class="og-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+  // La présentation s'affiche tant que le joueur n'a pas validé sa participation
+  function cardNeeded() {
+    return appState.role !== "admin" && appState.me && appState.me.agent != null &&
+      appState.me.participation !== "validated" && appState.cards.length > 0;
+  }
+
+  function cardHTML(n, v) {
+    return '<div class="og-card-head">AGENT #' + padNum(n) + "</div>" +
+      [["NOM", v[0]], ["PRÉNOM", v[1]], ["ÉQUIPE", v[2]]].map(function (f) {
+        return '<div class="og-card-f"><span>' + f[0] + "</span><b>" + escapeHtml(f[1]) + "</b></div>";
+      }).join("");
+  }
+
+  function buildCards() {
+    cardsGrid.innerHTML = "";
+    appState.cards.forEach(function (c, i) {
+      const known = !c.me && (c.nom || c.prenom || c.equipe);   // carte dévoilée par l'organisateur
+      const el = document.createElement("div");
+      el.className = "og-card" + (c.me ? " og-me" : "") + (known ? " og-known" : "");
+      el.style.setProperty("--d", (i * 55) + "ms");
+      el.innerHTML = cardHTML(c.agent, known ? [c.nom || MASK, c.prenom || MASK, c.equipe || MASK] : [MASK, MASK, MASK]);
+      cardsGrid.appendChild(el);
+    });
+  }
+
+  // 3 lignes, cartes dimensionnées pour tenir à l'écran (défilement horizontal si l'écran est trop étroit)
+  function layoutCards() {
+    const n = appState.cards.length, cols = Math.max(1, Math.ceil(n / 3));
+    const W = cardsWall.clientWidth, H = cardsWall.clientHeight, g = Math.max(6, Math.min(12, W / 70));
+    const cw = Math.max(80, Math.min(150, (W - g * (cols + 1)) / cols, ((H - g * 4) / 3) * 0.74));
+    cardsGrid.style.cssText = "--cols:" + cols + ";--w:" + cw + "px;--g:" + g + "px";
+  }
+
+  function placeBig() {
+    if (!cardsBig) return;
+    const wr = cardsWall.getBoundingClientRect();
+    const fw = Math.max(140, Math.min(300, window.innerWidth * 0.86, (wr.height - 16) * 0.74)), fh = fw / 0.74;
+    cardsBig.style.cssText = "--w:" + fw + "px;left:" + (wr.left + wr.width / 2 - fw / 2) + "px;top:" + (wr.top + wr.height / 2 - fh / 2) + "px";
+  }
+
+  function scrambleText(el, text) {
+    return new Promise(function (resolve) {
+      if (prefersReducedMotion) { el.textContent = text; return resolve(); }
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&", steps = 12;
+      let f = 0;
+      const t = setInterval(function () {
+        f++;
+        let out = "";
+        for (let i = 0; i < text.length; i++) {
+          out += (text[i] === " " || i / text.length < f / steps) ? text[i] : chars[Math.floor(Math.random() * chars.length)];
+        }
+        el.textContent = out;
+        if (f >= steps) { clearInterval(t); resolve(); }
+      }, 45);
+    });
+  }
+
+  // Révèle / cache les infos de la carte du joueur
+  async function setMyCardShown(show) {
+    if (!cardsBig) return;
+    cardsShown = show;
+    cardsBig.classList.toggle("og-hid", !show);
+    const c = cardsBig.querySelector(".og-ctrl");
+    c.classList.toggle("og-on", show);
+    c.setAttribute("aria-pressed", show ? "true" : "false");
+    c.querySelector(".og-lbl").textContent = show ? "CACHER" : "RÉVÉLER";
+    const me = appState.me;
+    const vals = show ? [me.nom || MASK, me.prenom || MASK, me.equipe || MASK] : [MASK, MASK, MASK];
+    await Promise.all(Array.prototype.map.call(cardsBig.querySelectorAll(".og-card-f b"), function (b, i) { return scrambleText(b, vals[i]); }));
+  }
+
+  // La carte du joueur quitte le mur et vient devant les autres
+  async function liftMyCard() {
+    const el = cardsGrid.querySelector(".og-me");
+    if (el.scrollIntoView) el.scrollIntoView({ block: "nearest", inline: "center", behavior: prefersReducedMotion ? "auto" : "smooth" });
+    await wait(prefersReducedMotion ? 0 : 600);
+    const r = el.getBoundingClientRect();
+    cardsBig = document.createElement("div");
+    cardsBig.className = "og-card og-big og-hid";
+    cardsBig.innerHTML = cardHTML(appState.me.agent, [MASK, MASK, MASK]) +
+      '<button type="button" class="og-ctrl" aria-pressed="false">' + EYE + '<span class="og-lbl">RÉVÉLER</span></button>';
+    cardsEl.appendChild(cardsBig);
+    placeBig();
+    const fr = cardsBig.getBoundingClientRect();
+    cardsBig.style.transform = "translate(" + (r.left + r.width / 2 - fr.left - fr.width / 2) + "px," +
+      (r.top + r.height / 2 - fr.top - fr.height / 2) + "px) scale(" + (r.width / fr.width) + ")";
+    el.style.visibility = "hidden";
+    cardsWall.classList.add("og-dim");
+    void cardsBig.offsetWidth;
+    cardsBig.style.transition = prefersReducedMotion ? "none" : "transform .9s cubic-bezier(.2,.8,.2,1)";
+    cardsBig.style.transform = "none";
+    await wait(prefersReducedMotion ? 0 : 950);
+    cardsBig.querySelector(".og-ctrl").onclick = function () { setMyCardShown(!cardsShown); };
+  }
+
+  // Appelée quand l'écran est sombre (pendant le coffre) : prépare l'écran des cartes
+  function prepareCards() {
+    cardsRun++;
+    if (cardsBig) { cardsBig.remove(); cardsBig = null; }
+    cardsShown = false;
+    cardsEl.classList.remove("og-out");
+    cardsEl.style.display = "flex";
+    cardsGrid.innerHTML = "";
+    cardsMsg.textContent = "";
+    cardsMsg.className = "og-cards-msg";
+    cardsBtns.classList.remove("og-on");
+    cardsBtnList.forEach(function (b) { b.disabled = false; });
+    cardsWall.classList.remove("og-dim");
+  }
+
+  // Appelée quand le coffre a disparu : le mur apparaît, puis la carte du joueur vient devant
+  async function runCards() {
+    const my = ++cardsRun, alive = function () { return my === cardsRun; };
+    document.documentElement.style.overflow = "hidden";
+    buildCards();
+    layoutCards();
+    cardsMsg.textContent = "RÉCUPÉRATION DES DOSSIERS…";
+    await wait(prefersReducedMotion ? 200 : appState.cards.length * 55 + 800);
+    if (!alive()) return;
+    cardsMsg.textContent = "IDENTIFICATION DE VOTRE DOSSIER…";
+    const mine = cardsGrid.querySelector(".og-me");
+    if (mine) mine.classList.add("og-pulse");
+    await wait(prefersReducedMotion ? 200 : 1400);
+    if (!alive()) return;
+    if (mine) {
+      await liftMyCard();
+      if (!alive()) return;
+    }
+    cardsMsg.textContent = "";
+    cardsBtns.classList.add("og-on");
+    setMyCardShown(true);   // la carte se révèle seule en arrivant
+  }
+
+  // Le joueur répond : « je valide » (plus jamais affiché) ou « je vérifie mon agenda » (réaffiché à chaque connexion)
+  async function answerCards(status) {
+    cardsBtnList.forEach(function (b) { b.disabled = true; });
+    if (cardsBig) cardsBig.querySelector(".og-ctrl").disabled = true;
+    cardsMsg.className = "og-cards-msg";
+    cardsMsg.textContent = "ENREGISTREMENT…";
+    try {
+      const { ok, result } = await callFunction("login", {
+        identifier: appState.identifier,
+        password: appState.password,
+        action: "participation",
+        status: status,
+      });
+      if (!ok) throw new Error(result.error || "erreur");
+      appState.me.participation = result.participation || status;
+    } catch (err) {
+      cardsMsg.className = "og-cards-msg og-bad";
+      cardsMsg.textContent = "ERREUR DE CONNEXION — RÉESSAIE";
+      cardsBtnList.forEach(function (b) { b.disabled = false; });
+      if (cardsBig) cardsBig.querySelector(".og-ctrl").disabled = false;
+      return;
+    }
+    cardsBtns.classList.remove("og-on");
+    cardsMsg.className = "og-cards-msg" + (status === "validated" ? " og-good" : "");
+    cardsMsg.textContent = status === "validated"
+      ? "✓ PARTICIPATION VALIDÉE — CETTE PRÉSENTATION NE S’AFFICHERA PLUS."
+      : "AGENDA À VÉRIFIER — CETTE PRÉSENTATION RÉAPPARAÎTRA À CHAQUE CONNEXION JUSQU’À VALIDATION.";
+    await wait(2200);
+    cardsEl.classList.add("og-out");
+    await wait(850);
+    cardsEl.style.display = "none";
+    if (cardsBig) { cardsBig.remove(); cardsBig = null; }
+    document.documentElement.style.overflow = "";
+  }
+  document.getElementById("og-cards-validate").addEventListener("click", function () { answerCards("validated"); });
+  document.getElementById("og-cards-agenda").addEventListener("click", function () { answerCards("agenda"); });
+  window.addEventListener("resize", function () {
+    if (cardsEl.style.display === "flex") { layoutCards(); placeBig(); }
+  });
+
   // ---------- Connexion ----------
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -766,6 +1099,10 @@
 
       appState.role = result.role;
       appState.reveal = result.reveal;
+      appState.me = result.me || null;
+      appState.cards = result.cards || [];
+      appState.identifier = identifier;
+      appState.password = password;
       appState.teams = result.teams || [];
       appState.epreuves = result.epreuves || [];
       appState.participants = result.participants || [];
@@ -781,11 +1118,17 @@
       setPasswordVisible(false);
 
       setTimeout(function () {
+        const wantCards = cardNeeded();
         if (window.VaultOG) {
-          // Coffre 3D : quand l'écran est entièrement sombre, on passe à la page de l'événement
-          VaultOG.play({ force: true, onCovered: prepareDashboard });
+          // Coffre 3D : écran sombre -> page de l'événement, puis cartes des agents si besoin
+          VaultOG.play({
+            force: true,
+            onCovered: function () { prepareDashboard(); if (wantCards) prepareCards(); },
+            onDone: function () { if (wantCards) runCards(); }
+          });
         } else {
           prepareDashboard();
+          if (wantCards) { prepareCards(); runCards(); }
         }
       }, 1100);
     } catch (err) {
