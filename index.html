@@ -328,7 +328,7 @@
   .og-cards-top p { margin: 4px 0 0; font-size: 11px; letter-spacing: 0.08em; color: var(--amber-dim); }
   .og-cards-wall { flex: 1; min-height: 0; display: flex; overflow: auto; transition: opacity .7s, filter .7s; }
   .og-cards-wall.og-dim { opacity: .22; filter: blur(1.5px); }
-  .og-cards-grid { margin: auto; display: grid; grid-template-columns: repeat(var(--cols, 6), var(--w, 90px)); gap: var(--g, 8px); padding: var(--g, 8px); width: max-content; }
+  .og-cards-grid { margin: auto; display: grid; grid-template-rows: repeat(var(--rows, 6), auto); grid-auto-flow: column; grid-auto-columns: var(--w, 90px); gap: var(--g, 8px); padding: var(--g, 8px); width: max-content; }
   .og-card { position: relative; flex: none; width: var(--w); height: calc(var(--w) / .74); font-size: calc(var(--w) / 9); padding: .75em .7em; display: flex; flex-direction: column; gap: .7em; overflow: hidden; border: 1px solid var(--amber-dim); border-radius: .55em; background: linear-gradient(160deg, rgba(232,147,58,.08), transparent 60%), var(--panel); animation: og-card-in .5s cubic-bezier(.2,.7,.2,1) var(--d, 0ms) both; }
   .og-card::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px); pointer-events: none; }
   .og-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: .28em; background: var(--amber); opacity: .65; }
@@ -372,6 +372,70 @@
     .og-form input, .og-form textarea, .og-form select { font-size: 16px; }
   }
   @media (prefers-reduced-motion: reduce) { .og-card { animation: none; } }
+
+  /* =========================================================
+     CLASSEMENT
+  ========================================================= */
+  :root { --gold: #f2c14e; --silver: #c9cdd1; --bronze: #c98245; }
+  .og-rank-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; cursor: pointer; }
+  .og-rank-title small { padding: 4px 9px; border: 1px solid var(--amber); border-radius: 3px; font-size: 11px; letter-spacing: .04em; }
+  .og-rank-title:hover small { background: var(--amber); color: var(--bg); }
+  .og-rank-title:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .og-rk-team { position: relative; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--amber-dim); border-radius: 6px; background: linear-gradient(160deg, rgba(232,147,58,.07), transparent 65%), var(--panel); }
+  .og-rk-team::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--amber); opacity: .6; }
+  .og-rk1 { border-color: var(--gold); }
+  .og-rk1::before { background: var(--gold); }
+  .og-rk2::before { background: var(--silver); }
+  .og-rk3::before { background: var(--bronze); }
+  .og-rk-th { display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; }
+  .og-rk-n { min-width: 1.4em; font-size: 26px; font-weight: 600; }
+  .og-rk1 .og-rk-n { color: var(--gold); }
+  .og-rk2 .og-rk-n { color: var(--silver); }
+  .og-rk3 .og-rk-n { color: var(--bronze); }
+  .og-rk-th b { flex: 1; font-size: 16px; letter-spacing: .04em; overflow-wrap: anywhere; }
+  .og-rk-tp { font-size: 22px; font-weight: 600; }
+  .og-rk-tp small { font-size: 10px; color: var(--amber-dim); }
+  .og-rk-th i { font-style: normal; color: var(--amber-dim); transition: transform .2s; }
+  .og-shut .og-rk-th i { transform: rotate(-90deg); }
+  .og-rk-td { padding: 0 14px 12px; }
+  .og-shut .og-rk-td { display: none; }
+  .og-er { display: flex; gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px dashed #3a2f1c; font-size: 13px; }
+  .og-er span { flex: 1; color: var(--amber-dim); }
+  .og-er em { font-style: normal; }
+  .og-er em.og-nil { color: #5c4a2c; }
+  .og-er u { min-width: 3.4em; text-align: right; text-decoration: none; font-weight: 600; color: var(--amber-dim); }
+  .og-er u.og-u1 { color: var(--gold); }
+  .og-er u.og-u2 { color: var(--silver); }
+  .og-er u.og-u3 { color: var(--bronze); }
+  .og-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .og-chip-on { background: var(--amber); color: var(--bg); }
+  .og-pr { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px dashed #3a2f1c; }
+  .og-pr b { flex: 1; font-size: 13px; overflow-wrap: anywhere; }
+  .og-pr .og-tag { font-size: 10px; color: var(--denied); }
+  .og-pr .og-btn-small { min-width: 38px; padding: 8px 6px; }
+  .og-pr input { width: 62px; padding: 8px 4px; text-align: center; font-size: 16px; }
+  .og-podium { position: fixed; inset: 0; z-index: 8000; padding: 12px 12px calc(40px + env(safe-area-inset-bottom, 0px)); overflow: auto; background: radial-gradient(circle at 50% 25%, #1c130b, #080605 70%); }
+  .og-podium-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+  .og-podium-head h2 { width: 100%; margin: 6px 0 2px; text-align: center; font-size: 20px; letter-spacing: .14em; color: var(--amber); }
+  .og-podium-stage { min-height: 68vh; display: flex; padding-top: 18px; }
+  .og-v2 { flex: none; margin: auto; display: flex; align-items: flex-end; gap: 8px; padding: 0 4px 8px; }
+  .og-col { flex: none; display: flex; flex-direction: column; gap: 8px; width: calc(var(--s, 1) * 112px); transition: transform .8s cubic-bezier(.2,.8,.2,1), width .8s; }
+  .og-col.og-new { animation: og-pop .6s cubic-bezier(.3,1.4,.5,1) both; }
+  .og-tc { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "rk n" "rk p"; column-gap: .7em; align-items: center; padding: .7em .9em; font-size: calc(var(--s, 1) * 13px); border: 1px solid var(--amber-dim); background: linear-gradient(160deg, rgba(232,147,58,.12), transparent 60%), var(--panel); transition: font-size .8s; }
+  .og-tc .og-rk { grid-area: rk; font-size: 1.9em; font-weight: 600; }
+  .og-tc b { grid-area: n; font-size: 1.05em; overflow-wrap: anywhere; }
+  .og-tc .og-tp { grid-area: p; font-size: .82em; color: var(--amber-dim); }
+  .og-tc.og-r1 { border-color: var(--gold); box-shadow: 0 0 34px rgba(242,193,78,.4); }
+  .og-tc.og-r1 .og-rk { color: var(--gold); }
+  .og-tc.og-r2 .og-rk { color: var(--silver); }
+  .og-tc.og-r3 .og-rk { color: var(--bronze); }
+  .og-bar { height: calc(var(--h, .12) * 230px); border: 1px solid var(--amber-dim); background: linear-gradient(#3a270f, #14110a); transform-origin: bottom; transition: height .8s cubic-bezier(.2,.8,.2,1); }
+  .og-intro .og-bar { animation: og-grow .8s cubic-bezier(.2,.9,.3,1) var(--d, 0s) both; }
+  .og-intro .og-tc { animation: og-drop .6s cubic-bezier(.3,1.4,.5,1) calc(var(--d, 0s) + .6s) both; }
+  @keyframes og-grow { from { transform: scaleY(0); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes og-drop { from { transform: translateY(-46px) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes og-pop { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .og-col, .og-bar, .og-tc { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
@@ -460,12 +524,24 @@
         </div>
       </section>
 
+      <section class="og-section" id="og-rank-section">
+        <h2 class="og-section-title og-rank-title" id="og-rank-open" role="button" tabindex="0">CLASSEMENT <small>VOIR LE PODIUM ▸</small></h2>
+        <div id="og-rank-list"></div>
+        <div class="og-admin-only" id="og-points-admin">
+          <div class="og-form">
+            <div class="og-form-title">ATTRIBUER DES POINTS</div>
+            <div id="og-points-chips" class="og-chips"></div>
+            <div id="og-points-rows"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="og-section og-admin-only">
         <h2 class="og-section-title">PARTICIPANTS</h2>
         <div id="og-participants-list"></div>
         <div id="og-participant-form" class="og-form" style="display:none">
           <div id="og-participant-form-title" class="og-form-title">MODIFIER LE PARTICIPANT</div>
-          <label for="og-participant-agent">Numéro d'agent</label>
+          <label for="og-participant-agent">Numéro d'agent (sans numéro, pas de carte)</label>
           <input type="number" id="og-participant-agent" min="1" step="1" inputmode="numeric">
           <label for="og-participant-nom">Nom</label>
           <input type="text" id="og-participant-nom">
@@ -480,6 +556,16 @@
         </div>
       </section>
     </div>
+  </div>
+
+  <!-- Podium du classement -->
+  <div id="og-podium" class="og-podium" role="dialog" aria-label="Podium du classement" hidden>
+    <div class="og-podium-head">
+      <h2>PODIUM</h2>
+      <button type="button" id="og-podium-replay" class="og-btn-small">↻ REJOUER</button>
+      <button type="button" id="og-podium-close" class="og-btn-small">✕ FERMER</button>
+    </div>
+    <div id="og-podium-stage" class="og-podium-stage"></div>
   </div>
 
   <!-- Cartes des agents : présentation avant le site (tant que la participation n'est pas validée) -->
@@ -522,6 +608,7 @@
     editingTeamId: null,
     editingEpreuveId: null,
     editingParticipantId: null,
+    points: [],
     me: null,
     cards: [],
     identifier: null,
@@ -782,7 +869,10 @@
   }
 
   // ---------- Actions admin ----------
+  let adminBusy = false;
   async function adminAction(action, id, fields) {
+    if (adminBusy) return false;
+    adminBusy = true;
     try {
       const { ok, result } = await callFunction("admin-manage", {
         adminIdentifier: appState.adminIdentifier,
@@ -793,7 +883,7 @@
       });
       if (!ok) {
         alert(result.error || "Une erreur est survenue.");
-        return;
+        return false;
       }
       appState.teams = result.teams || [];
       appState.epreuves = result.epreuves || [];
@@ -801,8 +891,14 @@
       renderTeams();
       renderEpreuves();
       renderParticipants();
+      if (result.points) appState.points = result.points;
+      renderRanking();
+      return true;
     } catch (err) {
       alert("Erreur de connexion au serveur.");
+      return false;
+    } finally {
+      adminBusy = false;
     }
   }
 
@@ -826,30 +922,26 @@
 
   document.getElementById("og-add-team-btn").addEventListener("click", () => openTeamForm(null));
   document.getElementById("og-team-form-cancel").addEventListener("click", closeTeamForm);
-  document.getElementById("og-team-form-submit").addEventListener("click", () => {
+  document.getElementById("og-team-form-submit").addEventListener("click", async () => {
     const name = document.getElementById("og-team-name").value.trim();
     const description = document.getElementById("og-team-desc").value.trim();
     if (!name) return;
-    if (appState.editingTeamId) {
-      adminAction("update_team", appState.editingTeamId, { name, description });
-    } else {
-      adminAction("create_team", null, { name, description });
-    }
-    closeTeamForm();
+    const done = appState.editingTeamId
+      ? await adminAction("update_team", appState.editingTeamId, { name, description })
+      : await adminAction("create_team", null, { name, description });
+    if (done) closeTeamForm();
   });
 
   document.getElementById("og-add-epreuve-btn").addEventListener("click", () => openEpreuveForm(null));
   document.getElementById("og-epreuve-form-cancel").addEventListener("click", closeEpreuveForm);
-  document.getElementById("og-epreuve-form-submit").addEventListener("click", () => {
+  document.getElementById("og-epreuve-form-submit").addEventListener("click", async () => {
     const title = document.getElementById("og-epreuve-title").value.trim();
     const description = document.getElementById("og-epreuve-desc").value.trim();
     if (!title) return;
-    if (appState.editingEpreuveId) {
-      adminAction("update_epreuve", appState.editingEpreuveId, { title, description });
-    } else {
-      adminAction("create_epreuve", null, { title, description });
-    }
-    closeEpreuveForm();
+    const done = appState.editingEpreuveId
+      ? await adminAction("update_epreuve", appState.editingEpreuveId, { title, description })
+      : await adminAction("create_epreuve", null, { title, description });
+    if (done) closeEpreuveForm();
   });
 
   function prepareDashboard() {
@@ -862,6 +954,8 @@
     renderTeams();
     renderEpreuves();
     if (appState.role === "admin") renderParticipants();
+    renderRanking();
+    startRankPolling();
   }
 
   // ---------- Formulaire participant (admin) ----------
@@ -881,15 +975,15 @@
   }
   function closeParticipantForm() { document.getElementById("og-participant-form").style.display = "none"; }
   document.getElementById("og-participant-form-cancel").addEventListener("click", closeParticipantForm);
-  document.getElementById("og-participant-form-submit").addEventListener("click", function () {
+  document.getElementById("og-participant-form-submit").addEventListener("click", async function () {
     const raw = document.getElementById("og-participant-agent").value.trim();
-    adminAction("update_participant", appState.editingParticipantId, {
+    const done = await adminAction("update_participant", appState.editingParticipantId, {
       agent_number: raw === "" ? null : Number(raw),
       nom: document.getElementById("og-participant-nom").value.trim(),
       prenom: document.getElementById("og-participant-prenom").value.trim(),
       team_id: document.getElementById("og-participant-team").value || null,
     });
-    closeParticipantForm();
+    if (done) closeParticipantForm();
   });
 
   // ---------- Cartes des agents (présentation avant le site) ----------
@@ -903,6 +997,7 @@
   const MASK = "????";
   const wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   const padNum = function (n) { return String(n).padStart(2, "0"); };
+  const cardsStep = function () { return Math.min(55, 1600 / Math.max(1, appState.cards.length)); };
   const EYE = '<svg class="og-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
     '<svg class="og-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
@@ -925,18 +1020,18 @@
       const known = !c.me && (c.nom || c.prenom || c.equipe);   // carte dévoilée par l'organisateur
       const el = document.createElement("div");
       el.className = "og-card" + (c.me ? " og-me" : "") + (known ? " og-known" : "");
-      el.style.setProperty("--d", (i * 55) + "ms");
+      el.style.setProperty("--d", (i * cardsStep()) + "ms");
       el.innerHTML = cardHTML(c.agent, known ? [c.nom || MASK, c.prenom || MASK, c.equipe || MASK] : [MASK, MASK, MASK]);
       cardsGrid.appendChild(el);
     });
   }
 
-  // 3 lignes, cartes dimensionnées pour tenir à l'écran (défilement horizontal si l'écran est trop étroit)
+  // 6 lignes, cartes dimensionnées pour tenir à l'écran (défilement si l'écran est trop petit)
   function layoutCards() {
-    const n = appState.cards.length, cols = Math.max(1, Math.ceil(n / 3));
-    const W = cardsWall.clientWidth, H = cardsWall.clientHeight, g = Math.max(6, Math.min(12, W / 70));
-    const cw = Math.max(80, Math.min(150, (W - g * (cols + 1)) / cols, ((H - g * 4) / 3) * 0.74));
-    cardsGrid.style.cssText = "--cols:" + cols + ";--w:" + cw + "px;--g:" + g + "px";
+    const n = appState.cards.length, rows = Math.max(1, Math.min(6, n)), cols = Math.ceil(n / rows);
+    const W = cardsWall.clientWidth, H = cardsWall.clientHeight, g = Math.max(5, Math.min(10, W / 80));
+    const cw = Math.max(64, Math.min(150, (W - g * (cols + 1)) / cols, ((H - g * (rows + 1)) / rows) * 0.74));
+    cardsGrid.style.cssText = "--rows:" + rows + ";--w:" + cw + "px;--g:" + g + "px";
   }
 
   function placeBig() {
@@ -1023,7 +1118,7 @@
     buildCards();
     layoutCards();
     cardsMsg.textContent = "RÉCUPÉRATION DES DOSSIERS…";
-    await wait(prefersReducedMotion ? 200 : appState.cards.length * 55 + 800);
+    await wait(prefersReducedMotion ? 200 : appState.cards.length * cardsStep() + 800);
     if (!alive()) return;
     cardsMsg.textContent = "IDENTIFICATION DE VOTRE DOSSIER…";
     const mine = cardsGrid.querySelector(".og-me");
@@ -1079,6 +1174,246 @@
     if (cardsEl.style.display === "flex") { layoutCards(); placeBig(); }
   });
 
+  // ---------- Classement ----------
+  const rankListEl = document.getElementById("og-rank-list");
+  const rankEls = new Map();
+  let rankSig = "", rankEpIdx = 0, rankPoll = null, lastPollSig = "", pointsChain = Promise.resolve(), pointsPending = 0;
+  const ord = function (r) { return r + (r === 1 ? "er" : "e"); };
+  const fmtPts = function (v) { return (v > 0 ? "+" : "") + v + " PTS"; };
+  const rankClass = function (r) { return r <= 3 ? r : 0; };
+  const attr = function (s) { return escapeHtml(s).replace(/"/g, "&quot;"); };
+
+  // Le classement ne compte que les équipes et épreuves révélées (mêmes règles pour l'admin et les joueurs)
+  function rankingData() {
+    const teams = appState.teams.filter(function (t) { return t.visible; });
+    const eps = appState.epreuves.filter(function (e) { return e.visible; });
+    const pts = new Map(appState.points.map(function (p) { return [String(p.team_id) + "|" + String(p.epreuve_id), p.points]; }));
+    const rows = teams.map(function (t) {
+      const vals = eps.map(function (e) { const k = String(t.id) + "|" + String(e.id); return pts.has(k) ? pts.get(k) : null; });
+      return { team: t, vals: vals, total: vals.reduce(function (a, b) { return a + (b || 0); }, 0) };
+    });
+    rows.sort(function (a, b) { return b.total - a.total || String(a.team.name).localeCompare(String(b.team.name), "fr"); });
+    rows.forEach(function (r) {
+      r.rank = 1 + rows.filter(function (o) { return o.total > r.total; }).length;
+      r.epRanks = r.vals.map(function (v, j) { return v == null ? null : 1 + rows.filter(function (o) { return o.vals[j] != null && o.vals[j] > v; }).length; });
+    });
+    return { rows: rows, eps: eps };
+  }
+
+  function renderRanking() {
+    renderPointsAdmin();
+    const data = rankingData(), rows = data.rows, eps = data.eps;
+    const sig = JSON.stringify([rows.map(function (r) { return [r.team.id, r.team.name, r.total, r.vals]; }), eps.map(function (e) { return [e.id, e.title]; })]);
+    if (sig === rankSig) return;
+    rankSig = sig;
+    const first = new Map();
+    rankEls.forEach(function (el, id) { first.set(id, el.getBoundingClientRect().top); });
+    const keep = new Set(rows.map(function (r) { return String(r.team.id); }));
+    rankEls.forEach(function (el, id) { if (!keep.has(id)) { el.remove(); rankEls.delete(id); } });
+    const empty = rankListEl.querySelector(".og-empty");
+    if (empty) empty.remove();
+    if (!rows.length) rankListEl.innerHTML = '<div class="og-empty">Aucune équipe classée pour l’instant.</div>';
+    rows.forEach(function (r) {
+      const id = String(r.team.id);
+      let el = rankEls.get(id);
+      if (!el) { el = document.createElement("article"); rankEls.set(id, el); }
+      const shut = el.classList.contains("og-shut");
+      el.className = "og-rk-team og-rk" + rankClass(r.rank) + (shut ? " og-shut" : "");
+      let html = '<div class="og-rk-th" role="button" tabindex="0"><span class="og-rk-n">' + r.rank + "</span><b>" + escapeHtml(r.team.name) +
+        '</b><span class="og-rk-tp">' + r.total + "<small> PTS</small></span><i>▾</i></div><div class=\"og-rk-td\">";
+      if (!eps.length) html += '<div class="og-er"><span>Aucune épreuve révélée pour l’instant.</span></div>';
+      eps.forEach(function (e, j) {
+        const v = r.vals[j];
+        html += '<div class="og-er"><span>' + escapeHtml(e.title) + "</span>" +
+          (v == null ? '<em class="og-nil">à venir</em>' : "<em>" + fmtPts(v) + '</em><u class="og-u' + rankClass(r.epRanks[j]) + '">' + ord(r.epRanks[j]) + "</u>") + "</div>";
+      });
+      el.innerHTML = html + "</div>";
+      rankListEl.appendChild(el);
+    });
+    rankEls.forEach(function (el, id) {
+      const t0 = first.get(id);
+      if (t0 == null) return;
+      const d = t0 - el.getBoundingClientRect().top;
+      if (d) { el.style.transition = "none"; el.style.transform = "translateY(" + d + "px)"; void el.offsetWidth; el.style.transition = "transform .8s cubic-bezier(.2,.8,.2,1)"; el.style.transform = ""; }
+    });
+    if (podOpen) renderPodium(false);
+  }
+  rankListEl.addEventListener("click", function (e) { const t = e.target.closest(".og-rk-th"); if (t) t.parentNode.classList.toggle("og-shut"); });
+  rankListEl.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("og-rk-th")) { e.preventDefault(); e.target.parentNode.classList.toggle("og-shut"); }
+  });
+
+  // --- Attribution des points (admin) : affichage immédiat, envoi au serveur dans l'ordre ---
+  function pointsOf(teamId, epId) {
+    const p = appState.points.find(function (x) { return String(x.team_id) === String(teamId) && String(x.epreuve_id) === String(epId); });
+    return p ? p.points : null;
+  }
+  function currentEpId() { return appState.epreuves[rankEpIdx] ? String(appState.epreuves[rankEpIdx].id) : null; }
+  function renderPointsAdmin() {
+    if (appState.role !== "admin") return;
+    const chips = document.getElementById("og-points-chips"), rows = document.getElementById("og-points-rows");
+    if (rows.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+    const eps = appState.epreuves, teams = appState.teams;
+    if (!eps.length || !teams.length) {
+      chips.innerHTML = "";
+      rows.innerHTML = '<div class="og-empty">Crée au moins une équipe et une épreuve pour attribuer des points.</div>';
+      return;
+    }
+    if (rankEpIdx >= eps.length) rankEpIdx = 0;
+    const ep = eps[rankEpIdx];
+    chips.innerHTML = eps.map(function (e, j) {
+      return '<button type="button" class="og-btn-small' + (j === rankEpIdx ? " og-chip-on" : "") + '" data-ep="' + j + '">' + escapeHtml(e.title) + (e.visible ? "" : " (cachée)") + "</button>";
+    }).join("");
+    rows.innerHTML = teams.map(function (t) {
+      const v = pointsOf(t.id, ep.id), id = attr(t.id);
+      return '<div class="og-pr"><b>' + escapeHtml(t.name) + (t.visible ? "" : ' <span class="og-tag">cachée</span>') + "</b>" +
+        '<button type="button" class="og-btn-small" data-team="' + id + '" data-d="-5">−5</button>' +
+        '<button type="button" class="og-btn-small" data-team="' + id + '" data-d="-1">−1</button>' +
+        '<input type="number" inputmode="numeric" step="1" data-team="' + id + '" value="' + (v == null ? "" : v) + '" placeholder="—" aria-label="Points de ' + attr(t.name) + '">' +
+        '<button type="button" class="og-btn-small" data-team="' + id + '" data-d="1">+1</button>' +
+        '<button type="button" class="og-btn-small" data-team="' + id + '" data-d="5">+5</button></div>';
+    }).join("");
+  }
+  function applyLists(result) {
+    appState.teams = result.teams || appState.teams;
+    appState.epreuves = result.epreuves || appState.epreuves;
+    appState.participants = result.participants || appState.participants;
+    appState.points = result.points || [];
+    renderTeams();
+    renderEpreuves();
+    renderParticipants();
+    renderRanking();
+  }
+  function setPoints(teamId, epId, v) {
+    if (v != null && (isNaN(v) || Math.abs(v) > 100000)) { alert("Nombre de points invalide."); renderPointsAdmin(); return; }
+    teamId = String(teamId);
+    epId = String(epId);
+    appState.points = appState.points.filter(function (p) { return !(String(p.team_id) === teamId && String(p.epreuve_id) === epId); });
+    if (v != null) appState.points.push({ team_id: teamId, epreuve_id: epId, points: v });
+    renderRanking();
+    pointsPending++;
+    pointsChain = pointsChain.then(async function () {
+      let failed = false;
+      try {
+        const { ok, result } = await callFunction("admin-manage", {
+          adminIdentifier: appState.adminIdentifier,
+          adminPassword: appState.adminPassword,
+          action: "set_points",
+          id: null,
+          fields: { team_id: teamId, epreuve_id: epId, points: v },
+        });
+        if (!ok) throw new Error(result.error || "Une erreur est survenue.");
+        if (pointsPending === 1) applyLists(result);
+      } catch (err) {
+        failed = true;
+        alert(err.message || "Erreur de connexion au serveur.");
+      } finally {
+        pointsPending--;
+      }
+      if (failed && pointsPending === 0) { lastPollSig = ""; pollRanking(); }
+    });
+  }
+  const pointsAdminEl = document.getElementById("og-points-admin");
+  pointsAdminEl.addEventListener("click", function (e) {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.ep != null) { rankEpIdx = +b.dataset.ep; renderPointsAdmin(); return; }
+    if (b.dataset.d && currentEpId()) {
+      const cur = pointsOf(b.dataset.team, currentEpId());
+      setPoints(b.dataset.team, currentEpId(), (cur == null ? 0 : cur) + Number(b.dataset.d));
+    }
+  });
+  pointsAdminEl.addEventListener("change", function (e) {
+    if (e.target.dataset.team == null || !currentEpId()) return;
+    const v = e.target.value.trim();
+    setPoints(e.target.dataset.team, currentEpId(), v === "" ? null : Math.trunc(Number(v)));
+  });
+
+  // --- Mise à jour automatique (ajout / suppression d'équipe, points, révélations) ---
+  async function pollRanking() {
+    if (document.hidden || pointsPending > 0 || !appState.identifier || dashboardEl.style.display !== "block") return;
+    try {
+      const { ok, result } = await callFunction("login", { identifier: appState.identifier, password: appState.password, action: "classement" });
+      if (!ok || pointsPending > 0) return;
+      const sig = JSON.stringify([result.teams, result.epreuves, result.points]);
+      if (sig === lastPollSig) return;
+      lastPollSig = sig;
+      appState.teams = result.teams || [];
+      appState.epreuves = result.epreuves || [];
+      appState.points = result.points || [];
+      renderTeams();
+      renderEpreuves();
+      if (appState.role === "admin") renderParticipants();
+      renderRanking();
+    } catch (err) { /* nouvel essai au prochain passage */ }
+  }
+  function startRankPolling() {
+    if (rankPoll) return;
+    rankPoll = setInterval(pollRanking, 5000);
+    document.addEventListener("visibilitychange", pollRanking);
+  }
+
+  // --- Podium « escalier » : plus la place est haute, plus l'encart est grand ---
+  const podEl = document.getElementById("og-podium"), podStage = document.getElementById("og-podium-stage");
+  let podOpen = false, podTimer = null;
+  const scaleOf = function (r) { return r === 1 ? 1.5 : r === 2 ? 1.25 : r === 3 ? 1.12 : Math.max(0.72, 1 - 0.08 * (r - 4)); };
+  function setCol(col, r, delay, max) {
+    col.style.setProperty("--s", scaleOf(r.rank));
+    col.style.setProperty("--d", delay + "s");
+    col.style.setProperty("--h", Math.max(0.12, Math.max(0, r.total) / max));
+    const tc = col.querySelector(".og-tc");
+    tc.className = "og-tc og-r" + rankClass(r.rank);
+    tc.innerHTML = '<span class="og-rk">' + r.rank + "</span><b>" + escapeHtml(r.team.name) + '</b><span class="og-tp">' + r.total + " PTS</span>";
+  }
+  function newCol(r, delay, max) {
+    const col = document.createElement("div");
+    col.className = "og-col";
+    col.dataset.id = String(r.team.id);
+    col.innerHTML = '<div class="og-tc"></div><div class="og-bar"></div>';
+    setCol(col, r, delay, max);
+    return col;
+  }
+  function renderPodium(intro) {
+    const rows = rankingData().rows;
+    if (!rows.length) { podStage.innerHTML = '<div class="og-empty" style="margin:auto">Aucune équipe classée pour l’instant.</div>'; return; }
+    const max = Math.max.apply(null, rows.map(function (r) { return Math.max(0, r.total); }).concat([1]));
+    let wrap = podStage.querySelector(".og-v2");
+    if (intro || !wrap) {
+      podStage.innerHTML = "";
+      wrap = document.createElement("div");
+      wrap.className = "og-v2 og-intro";
+      rows.forEach(function (r, i) { wrap.appendChild(newCol(r, (rows.length - 1 - i) * 0.4, max)); });
+      podStage.appendChild(wrap);
+      clearTimeout(podTimer);
+      podTimer = setTimeout(function () { wrap.classList.remove("og-intro"); }, (rows.length * 0.4 + 2.2) * 1000);
+      return;
+    }
+    const first = new Map(), cols = new Map();
+    Array.prototype.forEach.call(wrap.children, function (c) { first.set(c.dataset.id, c.getBoundingClientRect().left); cols.set(c.dataset.id, c); });
+    const keep = new Set(rows.map(function (r) { return String(r.team.id); }));
+    cols.forEach(function (c, id) { if (!keep.has(id)) { c.remove(); cols.delete(id); } });
+    rows.forEach(function (r) {
+      const id = String(r.team.id);
+      let col = cols.get(id);
+      if (col) setCol(col, r, 0, max);
+      else { col = newCol(r, 0, max); col.classList.add("og-new"); }
+      wrap.appendChild(col);
+    });
+    Array.prototype.forEach.call(wrap.children, function (c) {
+      if (!first.has(c.dataset.id)) return;
+      const dx = first.get(c.dataset.id) - c.getBoundingClientRect().left;
+      if (dx) { c.style.transition = "none"; c.style.transform = "translateX(" + dx + "px)"; void c.offsetWidth; c.style.transition = ""; c.style.transform = ""; }
+    });
+  }
+  function openPodium() { podOpen = true; podEl.hidden = false; document.documentElement.style.overflow = "hidden"; renderPodium(true); }
+  function closePodium() { podOpen = false; podEl.hidden = true; document.documentElement.style.overflow = ""; }
+  const rankTitle = document.getElementById("og-rank-open");
+  rankTitle.addEventListener("click", openPodium);
+  rankTitle.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPodium(); } });
+  document.getElementById("og-podium-close").addEventListener("click", closePodium);
+  document.getElementById("og-podium-replay").addEventListener("click", function () { renderPodium(true); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && podOpen) closePodium(); });
+
   // ---------- Connexion ----------
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -1100,6 +1435,7 @@
       appState.role = result.role;
       appState.reveal = result.reveal;
       appState.me = result.me || null;
+      appState.points = result.points || [];
       appState.cards = result.cards || [];
       appState.identifier = identifier;
       appState.password = password;
