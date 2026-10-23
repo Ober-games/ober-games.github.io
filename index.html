@@ -496,6 +496,29 @@
   @keyframes og-drop { from { transform: translateY(-46px) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes og-pop { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .og-col, .og-bar, .og-tc { animation: none !important; transition: none !important; } }
+
+  /* =========================================================
+     TRANSMISSIONS (remises aux agents ; l'admin les révèle ou les cache)
+  ========================================================= */
+  #og-transmissions-list { display: grid; gap: 12px; }
+  .og-tx { position: relative; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+  .og-tx::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--amber); }
+  .og-tx-hidden { opacity: 0.6; border-style: dashed; }
+  .og-tx-hidden::before { opacity: .35; }
+  .og-tx-head { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 16px 14px 12px; background: transparent; border: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .og-tx-head:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+  .og-tx-ref { flex: none; font-size: 11px; font-weight: 600; letter-spacing: .16em; color: var(--amber); white-space: nowrap; }
+  .og-tx-title { flex: 1; font: 700 17px/1.25 var(--sans); letter-spacing: .08em; overflow-wrap: anywhere; }
+  .og-tx-head i { flex: none; font-style: normal; color: var(--muted); transition: transform .2s; }
+  .og-tx.og-shut .og-tx-head i { transform: rotate(-90deg); }
+  .og-tx-body { padding: 0 14px 14px; }
+  .og-tx.og-shut .og-tx-body { display: none; }
+  .og-tx-text { margin: 0; font: 400 15px/1.6 var(--sans); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .og-tx-media { display: block; margin-top: 12px; border: 1px solid var(--line); background: var(--bg); }
+  .og-tx-media img { display: block; width: 100%; height: auto; }
+  .og-tx-file { display: inline-block; margin-top: 12px; text-decoration: none; }
+  .og-tx-controls { margin-top: 0; padding: 0 14px 14px; }
+  #og-tx-body { min-height: 140px; }
 </style>
 </head>
 <body>
@@ -595,6 +618,29 @@
         </div>
       </section>
 
+      <section class="og-section" id="og-transmissions-section">
+        <h2 class="og-section-title">TRANSMISSIONS</h2>
+        <div id="og-transmissions-list"></div>
+        <div class="og-admin-only">
+          <button type="button" id="og-add-tx-btn" class="og-btn-small">+ AJOUTER UNE TRANSMISSION</button>
+          <div id="og-tx-form" class="og-form" style="display:none">
+            <div id="og-tx-form-title" class="og-form-title">NOUVELLE TRANSMISSION</div>
+            <label for="og-tx-numero">Numéro du rapport (facultatif)</label>
+            <input type="number" id="og-tx-numero" min="1" step="1" inputmode="numeric">
+            <label for="og-tx-title">Titre</label>
+            <input type="text" id="og-tx-title">
+            <label for="og-tx-body">Message</label>
+            <textarea id="og-tx-body"></textarea>
+            <label for="og-tx-attachment">Pièce jointe : image ou fichier (adresse ou chemin, facultatif)</label>
+            <input type="text" id="og-tx-attachment" inputmode="url" autocomplete="off" placeholder="ex. transmissions/rapport-001.jpg">
+            <div class="og-form-buttons">
+              <button type="button" id="og-tx-form-submit" class="og-submit">ENREGISTRER</button>
+              <button type="button" id="og-tx-form-cancel" class="og-btn-small">ANNULER</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="og-section" id="og-rank-section">
         <h2 class="og-section-title og-rank-title" id="og-rank-open" role="button" tabindex="0">CLASSEMENT <small>VOIR LE PODIUM ▸</small></h2>
         <div id="og-rank-list"></div>
@@ -679,6 +725,9 @@
     editingTeamId: null,
     editingEpreuveId: null,
     editingParticipantId: null,
+    editingTransmissionId: null,
+    transmissions: [],
+    transmissionsError: "",
     points: [],
     me: null,
     cards: [],
@@ -1015,6 +1064,159 @@
     if (done) closeEpreuveForm();
   });
 
+  // ---------- Transmissions (remises aux agents ; l'admin les révèle ou les cache) ----------
+  const txState = new Map();
+  let txBusy = false, txPoll = null, txSig = "";
+  const txAttr = function (s) { return escapeHtml(s).replace(/"/g, "&quot;"); };
+  // Pièce jointe : adresse http(s) ou chemin relatif uniquement (jamais javascript: ni data:)
+  const txSafeUrl = function (u) {
+    u = String(u || "").trim();
+    return u && (/^https?:\/\//i.test(u) || !/^[a-z][a-z0-9+.-]*:/i.test(u)) ? u : "";
+  };
+  const txIsImage = function (u) { return /\.(png|jpe?g|gif|webp|avif|svg)([?#].*)?$/i.test(u); };
+
+  function txCall(action, id, fields) {
+    const admin = appState.role === "admin";
+    return callFunction("transmissions", {
+      identifier: admin ? appState.adminIdentifier : appState.identifier,
+      password: admin ? appState.adminPassword : appState.password,
+      action: action,
+      id: id || null,
+      fields: fields || null,
+    });
+  }
+
+  async function loadTransmissions() {
+    if (!appState.identifier || document.hidden) return;
+    try {
+      const { ok, result } = await txCall("list");
+      if (ok) { appState.transmissions = result.transmissions || []; appState.transmissionsError = ""; }
+      else { appState.transmissionsError = result.error || result.message || "erreur"; }
+      if (dashboardEl.style.display === "block") renderTransmissions();
+    } catch (err) { /* nouvel essai au prochain passage */ }
+  }
+
+  function renderTransmissions() {
+    const container = document.getElementById("og-transmissions-list");
+    const admin = appState.role === "admin", list = appState.transmissions;
+    const sig = JSON.stringify([list, admin, admin ? appState.transmissionsError : ""]);
+    if (sig === txSig) return;
+    txSig = sig;
+    container.innerHTML = "";
+    if (!list.length) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = admin
+        ? (appState.transmissionsError ? "Transmissions indisponibles : " + appState.transmissionsError : "Aucune transmission pour l'instant.")
+        : "Aucune transmission reçue pour l'instant.";
+      container.appendChild(msg);
+      return;
+    }
+    list.forEach(function (t, i) {
+      const key = String(t.id);
+      const open = txState.has(key) ? txState.get(key) : !admin;   // joueur : ouvertes ; admin : repliées
+      const hidden = t.visible === false;
+      const ref = "RAPPORT " + String(t.numero != null ? t.numero : i + 1).padStart(3, "0");
+      const url = txSafeUrl(t.attachment);
+      const item = document.createElement("article");
+      item.className = "og-tx" + (open ? "" : " og-shut") + (hidden ? " og-tx-hidden" : "");
+      item.dataset.id = key;
+      let html = '<button type="button" class="og-tx-head" aria-expanded="' + (open ? "true" : "false") + '">' +
+        '<span class="og-tx-ref">' + ref + '</span><span class="og-tx-title">' + escapeHtml(t.title) + "</span>" +
+        (admin && hidden ? '<span class="og-badge">CACHÉ</span>' : "") + "<i>▾</i></button>" +
+        '<div class="og-tx-body">' + (t.body ? '<p class="og-tx-text">' + escapeHtml(t.body) + "</p>" : "");
+      if (url) {
+        html += txIsImage(url)
+          ? '<a class="og-tx-media" href="' + txAttr(url) + '" target="_blank" rel="noopener"><img src="' + txAttr(url) + '" alt="Pièce jointe — ' + ref + '" loading="lazy"></a>'
+          : '<a class="og-btn-small og-tx-file" href="' + txAttr(url) + '" target="_blank" rel="noopener">OUVRIR LA PIÈCE JOINTE</a>';
+      }
+      item.innerHTML = html + "</div>";
+      if (admin) {
+        const controls = document.createElement("div");
+        controls.className = "og-item-controls og-tx-controls";
+        const add = function (label, extra, fn) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "og-btn-small" + extra;
+          b.textContent = label;
+          b.addEventListener("click", fn);
+          controls.appendChild(b);
+        };
+        add(hidden ? "RÉVÉLER" : "CACHER", "", function () { txAction("toggle", t.id); });
+        add("MODIFIER", "", function () { openTxForm(t); });
+        add("SUPPRIMER", " og-btn-danger", function () {
+          if (confirm("Supprimer la transmission \"" + t.title + "\" ?")) txAction("delete", t.id);
+        });
+        item.appendChild(controls);
+      }
+      container.appendChild(item);
+    });
+  }
+  document.getElementById("og-transmissions-list").addEventListener("click", function (e) {
+    const head = e.target.closest(".og-tx-head");
+    if (!head) return;
+    const card = head.parentNode, shut = card.classList.toggle("og-shut");
+    head.setAttribute("aria-expanded", shut ? "false" : "true");
+    txState.set(card.dataset.id, !shut);
+  });
+
+  async function txAction(action, id, fields) {
+    if (txBusy) return false;
+    txBusy = true;
+    try {
+      const { ok, result } = await txCall(action, id, fields);
+      if (!ok) {
+        alert(result.error || result.message || "Une erreur est survenue.");
+        return false;
+      }
+      appState.transmissionsError = "";
+      appState.transmissions = result.transmissions || [];
+      renderTransmissions();
+      return true;
+    } catch (err) {
+      alert("Erreur de connexion au serveur.");
+      return false;
+    } finally {
+      txBusy = false;
+    }
+  }
+
+  function openTxForm(t) {
+    appState.editingTransmissionId = t ? t.id : null;
+    document.getElementById("og-tx-form-title").textContent = t ? "MODIFIER LA TRANSMISSION" : "NOUVELLE TRANSMISSION";
+    document.getElementById("og-tx-numero").value = t && t.numero != null ? t.numero : "";
+    document.getElementById("og-tx-title").value = t ? t.title : "";
+    document.getElementById("og-tx-body").value = t ? (t.body || "") : "";
+    document.getElementById("og-tx-attachment").value = t ? (t.attachment || "") : "";
+    const f = document.getElementById("og-tx-form");
+    f.style.display = "block";
+    if (f.scrollIntoView) f.scrollIntoView({ block: "nearest" });
+  }
+  function closeTxForm() { document.getElementById("og-tx-form").style.display = "none"; }
+  document.getElementById("og-add-tx-btn").addEventListener("click", function () { openTxForm(null); });
+  document.getElementById("og-tx-form-cancel").addEventListener("click", closeTxForm);
+  document.getElementById("og-tx-form-submit").addEventListener("click", async function () {
+    const title = document.getElementById("og-tx-title").value.trim();
+    if (!title) return;
+    const raw = document.getElementById("og-tx-numero").value.trim();
+    const fields = {
+      numero: raw === "" ? null : Number(raw),
+      title: title,
+      body: document.getElementById("og-tx-body").value,
+      attachment: document.getElementById("og-tx-attachment").value.trim(),
+    };
+    const done = appState.editingTransmissionId
+      ? await txAction("update", appState.editingTransmissionId, fields)
+      : await txAction("create", null, fields);
+    if (done) closeTxForm();
+  });
+
+  function startTransmissionsPolling() {
+    if (txPoll) return;
+    txPoll = setInterval(loadTransmissions, 15000);
+    document.addEventListener("visibilitychange", loadTransmissions);
+  }
+
   function prepareDashboard() {
     pageTitleEl.style.display = "none";
     terminalEl.style.display = "none";
@@ -1024,9 +1226,11 @@
     if (appState.role === "admin") dashboardEl.classList.add("og-is-admin");
     renderTeams();
     renderEpreuves();
+    renderTransmissions();
     if (appState.role === "admin") renderParticipants();
     renderRanking();
     startRankPolling();
+    startTransmissionsPolling();
   }
 
   // ---------- Formulaire participant (admin) ----------
@@ -1517,6 +1721,7 @@
         appState.adminIdentifier = identifier;
         appState.adminPassword = password;
       }
+      loadTransmissions();
 
       statusEl.className = "og-status granted";
       const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
