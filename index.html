@@ -1077,20 +1077,30 @@
   };
   const txIsImage = function (u) { return /\.(png|jpe?g|gif|webp|avif|svg)([?#].*)?$/i.test(u); };
 
+  // Appel d'une fonction SQL de la base (voir transmissions.sql) : rien à déployer côté Supabase
+  async function callRpc(name, payload) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+    return { ok: res.ok && !(result && result.error), result: result || {} };
+  }
+
   function txCall(action, id, fields) {
     const admin = appState.role === "admin";
-    return callFunction("transmissions", {
-      identifier: admin ? appState.adminIdentifier : appState.identifier,
-      password: admin ? appState.adminPassword : appState.password,
-      action: action,
-      id: id || null,
-      fields: fields || null,
+    return callRpc("og_call", {
+      p_identifier: admin ? appState.adminIdentifier : appState.identifier,
+      p_password: admin ? appState.adminPassword : appState.password,
+      p_action: action,
+      p_id: id == null ? null : String(id),
+      p_fields: fields || {},
     });
   }
 
   const txOffline = function (err) {
-    return "Erreur de connexion au serveur : la fonction « transmissions » est injoignable (non déployée, ou « Verify JWT » encore activé)." +
-      (err && err.message ? " [" + err.message + "]" : "");
+    return "Erreur de connexion au serveur." + (err && err.message ? " [" + err.message + "]" : "");
   };
 
   // Charge d'un coup les transmissions et les points du classement (agents : seulement ce qui est révélé)
@@ -1110,7 +1120,7 @@
         appState.transmissionsError = result.error || result.message || "erreur";
       }
     } catch (err) {
-      appState.transmissionsError = "fonction injoignable (non déployée, ou « Verify JWT » encore activé)";
+      appState.transmissionsError = "serveur injoignable";
     }
     renderRanking();
     if (dashboardEl.style.display === "block") renderTransmissions();
@@ -1590,13 +1600,21 @@
     pointsChain = pointsChain.then(async function () {
       let failed = false;
       try {
-        const { ok, result } = await txCall("points_set", null, { team_id: teamId, epreuve_id: epId, points: v });
-        if (!ok) { const e = new Error(result.error || result.message || "Une erreur est survenue."); e.server = true; throw e; }
-        appState.extras = true;
+        // Nouveau système (points enregistrés dans la base) s'il répond ; sinon l'ancien, comme avant
+        const call = appState.extras
+          ? await txCall("points_set", null, { team_id: teamId, epreuve_id: epId, points: v })
+          : await callFunction("admin-manage", {
+              adminIdentifier: appState.adminIdentifier,
+              adminPassword: appState.adminPassword,
+              action: "set_points",
+              id: null,
+              fields: { team_id: teamId, epreuve_id: epId, points: v },
+            });
+        if (!call.ok) { const e = new Error(call.result.error || call.result.message || "Une erreur est survenue."); e.server = true; throw e; }
         if (pointsPending === 1) {
-          appState.points = result.points || [];
+          if (appState.extras) { appState.points = call.result.points || []; renderRanking(); }
+          else applyLists(call.result);
           appState.serverPoints = appState.points.slice();
-          renderRanking();
         }
       } catch (err) {
         failed = true;
