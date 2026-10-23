@@ -728,6 +728,8 @@
     editingTransmissionId: null,
     transmissions: [],
     transmissionsError: "",
+    extras: false,
+    serverPoints: [],
     points: [],
     me: null,
     cards: [],
@@ -1011,7 +1013,7 @@
       renderTeams();
       renderEpreuves();
       renderParticipants();
-      if (result.points) appState.points = result.points;
+      if (result.points && !appState.extras) appState.points = result.points;
       renderRanking();
       return true;
     } catch (err) {
@@ -1086,14 +1088,32 @@
     });
   }
 
-  async function loadTransmissions() {
-    if (!appState.identifier || document.hidden) return;
+  const txOffline = function (err) {
+    return "Erreur de connexion au serveur : la fonction « transmissions » est injoignable (non déployée, ou « Verify JWT » encore activé)." +
+      (err && err.message ? " [" + err.message + "]" : "");
+  };
+
+  // Charge d'un coup les transmissions et les points du classement (agents : seulement ce qui est révélé)
+  async function loadExtras() {
+    if (!appState.identifier || document.hidden || pointsPending > 0 || txBusy) return;
     try {
       const { ok, result } = await txCall("list");
-      if (ok) { appState.transmissions = result.transmissions || []; appState.transmissionsError = ""; }
-      else { appState.transmissionsError = result.error || result.message || "erreur"; }
-      if (dashboardEl.style.display === "block") renderTransmissions();
-    } catch (err) { /* nouvel essai au prochain passage */ }
+      if (ok) {
+        appState.transmissions = result.transmissions || [];
+        appState.transmissionsError = "";
+        if (Array.isArray(result.points)) {
+          appState.points = result.points;
+          appState.serverPoints = result.points.slice();
+          appState.extras = true;
+        }
+      } else {
+        appState.transmissionsError = result.error || result.message || "erreur";
+      }
+    } catch (err) {
+      appState.transmissionsError = "fonction injoignable (non déployée, ou « Verify JWT » encore activé)";
+    }
+    renderRanking();
+    if (dashboardEl.style.display === "block") renderTransmissions();
   }
 
   function renderTransmissions() {
@@ -1174,7 +1194,7 @@
       renderTransmissions();
       return true;
     } catch (err) {
-      alert("Erreur de connexion au serveur.");
+      alert(txOffline(err));
       return false;
     } finally {
       txBusy = false;
@@ -1213,8 +1233,8 @@
 
   function startTransmissionsPolling() {
     if (txPoll) return;
-    txPoll = setInterval(loadTransmissions, 15000);
-    document.addEventListener("visibilitychange", loadTransmissions);
+    txPoll = setInterval(loadExtras, 8000);
+    document.addEventListener("visibilitychange", loadExtras);
   }
 
   function prepareDashboard() {
@@ -1570,22 +1590,27 @@
     pointsChain = pointsChain.then(async function () {
       let failed = false;
       try {
-        const { ok, result } = await callFunction("admin-manage", {
-          adminIdentifier: appState.adminIdentifier,
-          adminPassword: appState.adminPassword,
-          action: "set_points",
-          id: null,
-          fields: { team_id: teamId, epreuve_id: epId, points: v },
-        });
-        if (!ok) throw new Error(result.error || "Une erreur est survenue.");
-        if (pointsPending === 1) applyLists(result);
+        const { ok, result } = await txCall("points_set", null, { team_id: teamId, epreuve_id: epId, points: v });
+        if (!ok) { const e = new Error(result.error || result.message || "Une erreur est survenue."); e.server = true; throw e; }
+        appState.extras = true;
+        if (pointsPending === 1) {
+          appState.points = result.points || [];
+          appState.serverPoints = appState.points.slice();
+          renderRanking();
+        }
       } catch (err) {
         failed = true;
-        alert(err.message || "Erreur de connexion au serveur.");
+        alert(err && err.server ? err.message : txOffline(err));
       } finally {
         pointsPending--;
       }
-      if (failed && pointsPending === 0) { lastPollSig = ""; pollRanking(); }
+      if (failed && pointsPending === 0) {
+        appState.points = appState.serverPoints.slice();
+        renderRanking();
+        lastPollSig = "";
+        pollRanking();
+        loadExtras();
+      }
     });
   }
   const pointsAdminEl = document.getElementById("og-points-admin");
@@ -1615,7 +1640,7 @@
       lastPollSig = sig;
       appState.teams = result.teams || [];
       appState.epreuves = result.epreuves || [];
-      appState.points = result.points || [];
+      if (!appState.extras) appState.points = result.points || [];
       renderTeams();
       renderEpreuves();
       if (appState.role === "admin") renderParticipants();
@@ -1711,6 +1736,7 @@
       appState.reveal = result.reveal;
       appState.me = result.me || null;
       appState.points = result.points || [];
+      appState.serverPoints = appState.points.slice();
       appState.cards = result.cards || [];
       appState.identifier = identifier;
       appState.password = password;
@@ -1721,7 +1747,7 @@
         appState.adminIdentifier = identifier;
         appState.adminPassword = password;
       }
-      loadTransmissions();
+      loadExtras();
 
       statusEl.className = "og-status granted";
       const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
