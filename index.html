@@ -280,7 +280,7 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: var(--amber);
+    background: var(--team, var(--amber));
   }
   .og-item-hidden { opacity: 0.6; border-style: dashed; }
   .og-item-hidden::before { opacity: .35; }
@@ -397,7 +397,8 @@
   .og-card-f span { display: block; font-size: .66em; letter-spacing: .08em; color: var(--muted); }
   .og-card-f b { display: block; margin-top: .15em; font-weight: 600; letter-spacing: .12em; color: var(--muted); overflow-wrap: anywhere; }
   .og-card.og-known .og-card-f b { color: var(--text); letter-spacing: .04em; }
-  .og-card.og-big { position: fixed; z-index: 20; font-size: calc(var(--w) / 11); animation: none; border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber), 0 24px 60px rgba(0,0,0,.65); transform-origin: center; }
+  .og-card.og-big { position: fixed; z-index: 20; font-size: calc(var(--w) / 11); animation: none; border-color: var(--team, var(--amber)); box-shadow: 0 0 0 1px var(--team, var(--amber)), 0 24px 60px rgba(0,0,0,.65); transform-origin: center; }
+  .og-card.og-big::after { background: var(--team, var(--amber)); }
   .og-card.og-big .og-card-head { font-size: 1.15em; }
   .og-card.og-big .og-card-f b { color: var(--amber); letter-spacing: .05em; }
   .og-card.og-big.og-hid .og-card-f b { color: var(--muted); letter-spacing: .2em; }
@@ -519,6 +520,24 @@
   .og-tx-file { display: inline-block; margin-top: 12px; text-decoration: none; }
   .og-tx-controls { margin-top: 0; padding: 0 14px 14px; }
   #og-tx-body { min-height: 140px; }
+
+  /* =========================================================
+     ÉQUIPES : couleur, membres — et PARTICIPANTS côté joueurs
+  ========================================================= */
+  .og-item-team { border-color: var(--team); }
+  .og-dot { display: inline-block; width: 10px; height: 10px; margin-right: 7px; border: 1px solid rgba(216, 213, 202, 0.45); vertical-align: -1px; }
+  .og-members { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .og-members-title { font-size: 10px; letter-spacing: .16em; color: var(--muted); margin-bottom: 6px; }
+  .og-members ul { margin: 0; padding: 0; list-style: none; }
+  .og-members li { font: 400 14px/1.6 var(--sans); overflow-wrap: anywhere; }
+  .og-members li b { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--muted); margin-right: 6px; }
+  .og-me-tag { font-size: 10px; font-weight: 600; letter-spacing: .12em; color: var(--amber); }
+  .og-badge-mine { border-color: var(--amber); background: var(--amber); color: var(--bg); }
+  .og-color { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+  .og-color input { width: 44px; height: 32px; padding: 0; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+  @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+    .og-color input { width: 56px; height: 44px; }
+  }
 </style>
 </head>
 <body>
@@ -653,7 +672,7 @@
         </div>
       </section>
 
-      <section class="og-section og-admin-only">
+      <section class="og-section" id="og-participants-section">
         <h2 class="og-section-title">PARTICIPANTS</h2>
         <div id="og-participants-list"></div>
         <div id="og-participant-form" class="og-form" style="display:none">
@@ -728,6 +747,8 @@
     editingTransmissionId: null,
     transmissions: [],
     transmissionsError: "",
+    people: [],
+    teamColors: {},
     extras: false,
     serverPoints: [],
     points: [],
@@ -839,10 +860,15 @@
     appState.teams.forEach((team) => {
       const item = document.createElement("div");
       item.className = "og-item" + (team.visible ? "" : " og-item-hidden");
-      let html = '<div class="og-item-header"><strong>' + escapeHtml(team.name) + "</strong>";
+      const tcol = teamColorOf(team.id);
+      if (tcol) { item.classList.add("og-item-team"); item.style.setProperty("--team", tcol); }
+      const mine = appState.role !== "admin" && myTeamId() === String(team.id);
+      let html = '<div class="og-item-header"><strong>' + teamDot(team.id) + escapeHtml(team.name) + "</strong>";
       if (appState.role === "admin" && !team.visible) html += '<span class="og-badge">CACHÉ</span>';
+      if (mine) html += '<span class="og-badge og-badge-mine"' + (tcol ? ' style="background:' + tcol + ";border-color:" + tcol + ";color:" + inkOn(tcol) + '"' : "") + ">VOTRE ÉQUIPE</span>";
       html += "</div>";
       if (team.description) html += '<div class="og-item-desc">' + escapeHtml(team.description) + "</div>";
+      html += teamMembersHtml(team);
       item.innerHTML = html;
 
       if (appState.role === "admin") {
@@ -871,6 +897,17 @@
           if (confirm("Supprimer l'équipe \"" + team.name + "\" ?")) adminAction("delete_team", team.id);
         });
         controls.appendChild(deleteBtn);
+
+        const colorLabel = document.createElement("label");
+        colorLabel.className = "og-color";
+        colorLabel.innerHTML = "<span>COULEUR</span>";
+        const colorInput = document.createElement("input");
+        colorInput.type = "color";
+        colorInput.value = tcol || "#8f9187";
+        colorInput.setAttribute("aria-label", "Couleur de l’équipe " + team.name);
+        colorInput.addEventListener("change", function () { setTeamColor(team.id, colorInput.value); });
+        colorLabel.appendChild(colorInput);
+        controls.appendChild(colorLabel);
 
         item.appendChild(controls);
       }
@@ -932,6 +969,7 @@
   function renderParticipants() {
     const container = document.getElementById("og-participants-list");
     container.innerHTML = "";
+    if (appState.role !== "admin") { renderPeople(container); return; }
     if (appState.participants.length === 0) {
       const msg = document.createElement("div");
       msg.className = "og-empty";
@@ -955,7 +993,7 @@
         html += '<div class="og-item-desc">' +
           (p.agent_number != null ? "AGENT #" + String(p.agent_number).padStart(2, "0") : "PAS DE NUMÉRO D'AGENT") + "<br>" +
           escapeHtml(fullName || "nom non renseigné") + "<br>" +
-          escapeHtml(teamName(p.team_id) || "sans équipe") + "<br>" +
+          (teamName(p.team_id) ? teamDot(p.team_id) : "") + escapeHtml(teamName(p.team_id) || "sans équipe") + "<br>" +
           (STATUS[p.participation] || "") + "</div>";
       }
       item.innerHTML = html;
@@ -1066,9 +1104,90 @@
     if (done) closeEpreuveForm();
   });
 
+  // ---------- Équipes : couleur et membres ----------
+  const teamColorOf = function (teamId) {
+    const c = appState.teamColors[String(teamId)];
+    return /^#[0-9a-f]{6}$/i.test(c || "") ? c : "";
+  };
+  const inkOn = function (hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) > 150 ? "#0d0f0c" : "#f5f2e8";
+  };
+  const teamDot = function (teamId) {
+    const c = teamColorOf(teamId);
+    return c ? '<span class="og-dot" style="background:' + c + '"></span>' : "";
+  };
+  const personName = function (p) { return ((p.prenom || "") + " " + (p.nom || "")).trim(); };
+  const byAgent = function (a, b) {
+    return (a.agent_number == null) - (b.agent_number == null) || (a.agent_number - b.agent_number) || 0;
+  };
+  // Équipe du joueur connecté (d'après la liste « people » envoyée par le serveur)
+  const myTeamId = function () {
+    const m = appState.people.find(function (p) { return p.me; });
+    return m && m.team_id != null ? String(m.team_id) : null;
+  };
+  const membersOf = function (teamId) {
+    const list = appState.role === "admin"
+      ? appState.participants.filter(function (p) { return p.role !== "admin"; })
+      : appState.people;
+    return list.filter(function (p) { return p.team_id != null && String(p.team_id) === String(teamId); }).sort(byAgent);
+  };
+  function teamMembersHtml(team) {
+    const list = membersOf(team.id);
+    if (!list.length) return "";
+    return '<div class="og-members"><div class="og-members-title">MEMBRES (' + list.length + ")</div><ul>" +
+      list.map(function (p) {
+        return "<li><b>" + (p.agent_number != null ? "#" + padNum(p.agent_number) : "—") + "</b>" +
+          escapeHtml(personName(p) || "nom non renseigné") + (p.me ? ' <span class="og-me-tag">VOUS</span>' : "") + "</li>";
+      }).join("") + "</ul></div>";
+  }
+  // Catégorie PARTICIPANTS côté joueurs : lecture seule (pas de boutons cacher / révéler)
+  function renderPeople(container) {
+    const list = appState.people.slice().sort(byAgent);
+    if (!list.length) {
+      const msg = document.createElement("div");
+      msg.className = "og-empty";
+      msg.textContent = "Aucun participant révélé pour l'instant.";
+      container.appendChild(msg);
+      return;
+    }
+    list.forEach(function (p) {
+      const team = appState.teams.find(function (t) { return String(t.id) === String(p.team_id); });
+      const col = team ? teamColorOf(team.id) : "";
+      const item = document.createElement("div");
+      item.className = "og-item" + (col ? " og-item-team" : "");
+      if (col) item.style.setProperty("--team", col);
+      item.innerHTML = '<div class="og-item-header"><strong>' +
+        escapeHtml(personName(p) || ("AGENT #" + (p.agent_number != null ? padNum(p.agent_number) : "?"))) + "</strong>" +
+        (p.me ? '<span class="og-badge og-badge-mine">VOUS</span>' : "") + "</div>" +
+        '<div class="og-item-desc">' + (p.agent_number != null ? "AGENT #" + padNum(p.agent_number) + "<br>" : "") +
+        (team ? teamDot(team.id) + escapeHtml(team.name) : (p.team_id != null ? "équipe non révélée" : "sans équipe")) + "</div>";
+      container.appendChild(item);
+    });
+  }
+
+  // Couleur d'une équipe (admin) : affichage immédiat, puis enregistrement dans la base
+  async function setTeamColor(teamId, color) {
+    const key = String(teamId), before = appState.teamColors[key];
+    appState.teamColors[key] = color;
+    renderTeams();
+    renderParticipants();
+    try {
+      const { ok, result } = await txCall("team_color", null, { team_id: key, color: color });
+      if (!ok) { const e = new Error(result.error || result.message || "Une erreur est survenue."); e.server = true; throw e; }
+      appState.teamColors = {};
+      (result.team_colors || []).forEach(function (c) { appState.teamColors[String(c.team_id)] = c.color; });
+    } catch (err) {
+      if (before === undefined) delete appState.teamColors[key]; else appState.teamColors[key] = before;
+      alert(err && err.server ? err.message : txOffline(err));
+    }
+    renderTeams();
+    renderParticipants();
+  }
+
   // ---------- Transmissions (remises aux agents ; l'admin les révèle ou les cache) ----------
   const txState = new Map();
-  let txBusy = false, txPoll = null, txSig = "";
+  let txBusy = false, txPoll = null, txSig = "", txPeopleSig = "";
   const txAttr = function (s) { return escapeHtml(s).replace(/"/g, "&quot;"); };
   // Pièce jointe : adresse http(s) ou chemin relatif uniquement (jamais javascript: ni data:)
   const txSafeUrl = function (u) {
@@ -1116,6 +1235,11 @@
           appState.serverPoints = result.points.slice();
           appState.extras = true;
         }
+        if (Array.isArray(result.people)) appState.people = result.people;
+        if (Array.isArray(result.team_colors)) {
+          appState.teamColors = {};
+          result.team_colors.forEach(function (c) { appState.teamColors[String(c.team_id)] = c.color; });
+        }
       } else {
         appState.transmissionsError = result.error || result.message || "erreur";
       }
@@ -1123,7 +1247,16 @@
       appState.transmissionsError = "serveur injoignable";
     }
     renderRanking();
-    if (dashboardEl.style.display === "block") renderTransmissions();
+    if (dashboardEl.style.display === "block") {
+      renderTransmissions();
+      // équipes et participants : redessinés seulement si quelque chose a changé (et pas pendant un choix de couleur)
+      const sig = JSON.stringify([appState.people, appState.teamColors]);
+      if (sig !== txPeopleSig && !document.getElementById("og-teams-list").contains(document.activeElement)) {
+        txPeopleSig = sig;
+        renderTeams();
+        renderParticipants();
+      }
+    }
   }
 
   function renderTransmissions() {
@@ -1257,7 +1390,7 @@
     renderTeams();
     renderEpreuves();
     renderTransmissions();
-    if (appState.role === "admin") renderParticipants();
+    renderParticipants();
     renderRanking();
     startRankPolling();
     startTransmissionsPolling();
@@ -1383,6 +1516,7 @@
     if (el.scrollIntoView) el.scrollIntoView({ block: "nearest", inline: "center", behavior: prefersReducedMotion ? "auto" : "smooth" });
     await wait(prefersReducedMotion ? 0 : 600);
     const r = el.getBoundingClientRect();
+    cardsEl.style.setProperty("--team", teamColorOf(myTeamId()) || "");
     cardsBig = document.createElement("div");
     cardsBig.className = "og-card og-big og-hid";
     cardsBig.innerHTML = cardHTML(appState.me.agent, [MASK, MASK, MASK]) +
@@ -1661,7 +1795,7 @@
       if (!appState.extras) appState.points = result.points || [];
       renderTeams();
       renderEpreuves();
-      if (appState.role === "admin") renderParticipants();
+      renderParticipants();
       renderRanking();
     } catch (err) { /* nouvel essai au prochain passage */ }
   }
