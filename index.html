@@ -1277,7 +1277,7 @@
     }
     list.forEach(function (t, i) {
       const key = String(t.id);
-      const open = txState.has(key) ? txState.get(key) : !admin;   // joueur : ouvertes ; admin : repliées
+      const open = txState.has(key) ? txState.get(key) : false;   // repliées au départ ; un clic sur le titre déplie
       const hidden = t.visible === false;
       const ref = "RAPPORT " + String(t.numero != null ? t.numero : i + 1).padStart(3, "0");
       const url = txSafeUrl(t.attachment);
