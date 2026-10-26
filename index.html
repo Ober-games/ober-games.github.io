@@ -64,21 +64,7 @@
     color: var(--text);
     text-align: center;
   }
-  .og-seal { width: 200px; height: 200px; }
-  /* Emblème coffre-fort : courte mise en place au chargement, puis le coffre reste immobile */
-  .og-seal-a, .og-seal-b { transform-box: view-box; transform-origin: 120px 120px; }
-  .og-seal-a { animation: og-seal-spin-a 1.8s cubic-bezier(.22, .7, .2, 1) both; }
-  .og-seal-b { animation: og-seal-spin-b 2.2s cubic-bezier(.22, .7, .2, 1) .1s both; }
-  .og-seal-bt { animation: og-seal-slide 1s cubic-bezier(.2, .8, .2, 1) calc(.9s + var(--i) * .08s) both; }
-  .og-seal-core { animation: og-seal-fade 1.3s ease-out 1.9s both; }
-  .og-seal-txt { animation: og-seal-fade 1s ease-out 2.7s both; }
-  @keyframes og-seal-spin-a { from { transform: rotate(32deg); } to { transform: rotate(0deg); } }
-  @keyframes og-seal-spin-b { from { transform: rotate(-54deg); } to { transform: rotate(0deg); } }
-  @keyframes og-seal-slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-  @keyframes og-seal-fade { from { opacity: 0; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) {
-    .og-seal-a, .og-seal-b, .og-seal-bt, .og-seal-core, .og-seal-txt { animation: none; }
-  }
+  .og-seal { width: 124px; height: 124px; }
   .og-page-sub { font: 400 12px/1.4 var(--mono); letter-spacing: 0.2em; color: var(--amber); }
 
   .og-terminal {
@@ -368,7 +354,7 @@
 
   @media (max-width: 480px) {
     .og-page-title { font-size: 26px; }
-    .og-seal { width: 160px; height: 160px; }
+    .og-seal { width: 104px; height: 104px; }
   }
 
   /* =========================================================
@@ -566,109 +552,13 @@
 
   <div class="og-terminal-wrap">
     <h1 class="og-page-title">
-      <svg class="og-seal" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
-        <defs>
-          <radialGradient id="ogs-hl" gradientUnits="userSpaceOnUse" cx="120" cy="120" r="120"><stop offset=".9" stop-color="#e8933a" stop-opacity="0"/><stop offset=".96" stop-color="#e8933a" stop-opacity=".07"/><stop offset="1" stop-color="#e8933a" stop-opacity="0"/></radialGradient>
-          <radialGradient id="ogs-ga" gradientUnits="userSpaceOnUse" cx="120" cy="120" r="2.2" spreadMethod="repeat"><stop offset="0" stop-color="#141612"/><stop offset=".5" stop-color="#22251f"/><stop offset="1" stop-color="#141612"/></radialGradient>
-          <radialGradient id="ogs-gb" gradientUnits="userSpaceOnUse" cx="120" cy="120" r="2.6" spreadMethod="repeat"><stop offset="0" stop-color="#1f221d"/><stop offset=".5" stop-color="#2b2e28"/><stop offset="1" stop-color="#1f221d"/></radialGradient>
-          <linearGradient id="ogs-bo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b8d82"/><stop offset=".5" stop-color="#34372f" stop-opacity=".6"/><stop offset="1" stop-color="#050605"/></linearGradient>
-          <linearGradient id="ogs-bi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#050605"/><stop offset=".5" stop-color="#2a2d27" stop-opacity=".5"/><stop offset="1" stop-color="#6f7167"/></linearGradient>
-          <radialGradient id="ogs-pl" gradientUnits="userSpaceOnUse" cx="120" cy="120" r="74"><stop offset=".55" stop-color="#151713"/><stop offset="1" stop-color="#090a08"/></radialGradient>
-          <linearGradient id="ogs-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#171915"/><stop offset=".5" stop-color="#3b3e37"/><stop offset="1" stop-color="#171915"/></linearGradient>
-          <linearGradient id="ogs-bz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4d5047"/><stop offset=".5" stop-color="#242722"/><stop offset="1" stop-color="#0e100d"/></linearGradient>
-          <radialGradient id="ogs-co" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#22251f"/><stop offset=".65" stop-color="#121410"/><stop offset="1" stop-color="#0a0b09"/></radialGradient>
-          <radialGradient id="ogs-au" gradientUnits="userSpaceOnUse" cx="120" cy="120" r="40"><stop offset=".6" stop-color="#e8933a" stop-opacity="0"/><stop offset=".97" stop-color="#e8933a" stop-opacity=".22"/></radialGradient>
-          <linearGradient id="ogs-tx" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2a95e"/><stop offset="1" stop-color="#d98429"/></linearGradient>
-          <linearGradient id="ogs-sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8d5ca" stop-opacity=".09"/><stop offset=".42" stop-color="#d8d5ca" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>
-          <linearGradient id="ogs-rm" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#d8d5ca" stop-opacity="0"/><stop offset=".5" stop-color="#d8d5ca" stop-opacity=".45"/><stop offset="1" stop-color="#d8d5ca" stop-opacity="0"/></linearGradient>
-          <radialGradient id="ogs-sg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#5c5f55"/><stop offset="1" stop-color="#1a1c18"/></radialGradient>
-          <filter id="ogs-gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6"/></filter>
-          <filter id="ogs-sp" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
-          <clipPath id="ogs-rc"><path clip-rule="evenodd" d="M7 120a113 113 0 1 0 226 0a113 113 0 1 0-226 0ZM19 120a101 101 0 1 0 202 0a101 101 0 1 0-202 0ZM21.5 120a98.5 98.5 0 1 0 197 0a98.5 98.5 0 1 0-197 0ZM44 120a76 76 0 1 0 152 0a76 76 0 1 0-152 0Z"/></clipPath>
-          <g id="ogs-sc"><circle cx="227" cy="120" r="2.6" fill="#060705"/><circle cx="227" cy="120" r="2.1" fill="url(#ogs-sg)"/><path d="M227 118.4v3.2" stroke="#0a0b09" stroke-width=".7"/></g>
-          <rect id="ogs-mk" x="199" y="118.5" width="6.5" height="3" rx=".5" fill="#8a6a3a" stroke="#0a0b09" stroke-width=".4"/>
-          <g id="ogs-hv"><rect x="164" y="113.6" width="29" height="12.8" rx="1.8" fill="#050605" opacity=".55"/><rect x="165" y="115.1" width="27" height="9.8" rx="1.2" fill="url(#ogs-bg)" stroke="#0a0b09" stroke-width=".6"/><path d="M177 115.3v9.4M184 115.3v9.4" stroke="#0a0b09" stroke-width=".8"/><path d="M178 115.5v9M185 115.5v9" stroke="#8b8d82" stroke-opacity=".3" stroke-width=".4"/><rect x="186.6" y="118.4" width="3.4" height="3.2" rx=".4" fill="#8a6a3a"/></g>
-          <g id="ogs-pn"><rect x="164" y="116.4" width="28" height="7.2" rx="1.4" fill="#050605" opacity=".5"/><rect x="165" y="117.5" width="23" height="5" rx=".8" fill="url(#ogs-bg)" stroke="#0a0b09" stroke-width=".5"/><circle cx="190" cy="120" r="2.6" fill="#1b1d19" stroke="#0a0b09" stroke-width=".5"/><circle cx="190" cy="120" r=".9" fill="#e8933a"/></g>
-          <text id="ogs-te" x="120" y="134" dx=".8" text-anchor="middle" font-family="IBM Plex Sans Condensed, Arial Narrow, Arial, sans-serif" font-size="40" font-weight="700" letter-spacing="1.6">OG</text>
-        </defs>
-
-        <circle cx="120" cy="120" r="120" fill="url(#ogs-hl)"/>
-        <circle cx="120" cy="120" r="113.5" fill="#070806"/>
-        <circle cx="120" cy="120" r="107" fill="none" stroke="url(#ogs-ga)" stroke-width="12"/>
-        <circle cx="120" cy="120" r="87.25" fill="none" stroke="url(#ogs-gb)" stroke-width="22.5"/>
-        <g fill="none">
-          <circle cx="120" cy="120" r="112.6" stroke="url(#ogs-bo)" stroke-width="1.2"/>
-          <circle cx="120" cy="120" r="101.5" stroke="url(#ogs-bi)"/>
-          <circle cx="120" cy="120" r="98" stroke="url(#ogs-bo)"/>
-          <circle cx="120" cy="120" r="87.6" stroke="#0a0b09" stroke-width=".8"/>
-          <circle cx="120" cy="120" r="88.4" stroke="#8b8d82" stroke-opacity=".28" stroke-width=".5"/>
-        </g>
-
-        <g class="og-seal-b" fill="none">
-          <circle cx="120" cy="120" r="95.4" stroke="#d8d5ca" stroke-opacity=".3" stroke-width="3.2" stroke-dasharray=".6 4.395" stroke-dashoffset=".3"/>
-          <circle cx="120" cy="120" r="94.2" stroke="#d8d5ca" stroke-opacity=".5" stroke-width="5.6" stroke-dasharray="1 23.66" stroke-dashoffset=".5"/>
-          <circle cx="120" cy="120" r="92.75" stroke="#d8d5ca" stroke-opacity=".7" stroke-width="8.5" stroke-dasharray="1.6 71.25" stroke-dashoffset=".8"/>
-          <circle cx="120" cy="120" r="92" stroke="#e8933a" stroke-width="10" stroke-dasharray="2.2 142.31" stroke-dashoffset="1.1"/>
-          <use href="#ogs-mk" transform="rotate(45 120 120)"/>
-          <use href="#ogs-mk" transform="rotate(135 120 120)"/>
-          <use href="#ogs-mk" transform="rotate(225 120 120)"/>
-          <use href="#ogs-mk" transform="rotate(315 120 120)"/>
-        </g>
-
-        <g class="og-seal-a">
-          <use href="#ogs-sc" transform="rotate(22.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(67.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(112.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(157.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(202.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(247.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(292.5 120 120)"/>
-          <use href="#ogs-sc" transform="rotate(337.5 120 120)"/>
-        </g>
-
-        <g clip-path="url(#ogs-rc)"><g filter="url(#ogs-sp)" fill="#d8d5ca"><path d="M120 120-4.7 56.4 56.4-4.7Z" opacity=".15"/><path d="M120 120 244.7 183.6 183.6 244.7Z" opacity=".1"/></g></g>
-
-        <circle cx="120" cy="120" r="76" fill="#060705"/>
-        <circle cx="120" cy="120" r="73.5" fill="url(#ogs-pl)"/>
-        <g fill="none">
-          <circle cx="120" cy="120" r="62" stroke="#050605" stroke-width=".8"/>
-          <circle cx="120" cy="120" r="62.8" stroke="#8b8d82" stroke-opacity=".18" stroke-width=".5"/>
-          <circle cx="120" cy="120" r="67.5" stroke="#d8d5ca" stroke-opacity=".22" stroke-width="1.3" stroke-linecap="round" stroke-dasharray=".01 5.88"/>
-        </g>
-
-        <g class="og-seal-bt" style="--i:0"><use href="#ogs-pn"/></g>
-        <g transform="rotate(45 120 120)"><g class="og-seal-bt" style="--i:1"><use href="#ogs-hv"/></g></g>
-        <g transform="rotate(90 120 120)"><g class="og-seal-bt" style="--i:2"><use href="#ogs-pn"/></g></g>
-        <g transform="rotate(135 120 120)"><g class="og-seal-bt" style="--i:3"><use href="#ogs-hv"/></g></g>
-        <g transform="rotate(180 120 120)"><g class="og-seal-bt" style="--i:4"><use href="#ogs-pn"/></g></g>
-        <g transform="rotate(225 120 120)"><g class="og-seal-bt" style="--i:5"><use href="#ogs-hv"/></g></g>
-        <g transform="rotate(270 120 120)"><g class="og-seal-bt" style="--i:6"><use href="#ogs-pn"/></g></g>
-        <g transform="rotate(315 120 120)"><g class="og-seal-bt" style="--i:7"><use href="#ogs-hv"/></g></g>
-
-        <circle cx="120" cy="120" r="41" fill="#060705"/>
-        <circle cx="120" cy="120" r="38" fill="url(#ogs-co)"/>
-        <g class="og-seal-core">
-          <circle cx="120" cy="120" r="39" fill="url(#ogs-au)"/>
-          <circle cx="120" cy="120" r="38.6" fill="none" stroke="#e8933a" stroke-opacity=".5" stroke-width="3.4" filter="url(#ogs-gl)"/>
-          <circle cx="120" cy="120" r="38.6" fill="none" stroke="#e8933a" stroke-width="1.4"/>
-        </g>
-
-        <g fill="none">
-          <circle cx="120" cy="120" r="44" stroke="url(#ogs-bz)" stroke-width="6"/>
-          <circle cx="120" cy="120" r="44" stroke="#050605" stroke-opacity=".5" stroke-width="2.4" stroke-dasharray=".5 2.38"/>
-          <circle cx="120" cy="120" r="47" stroke="url(#ogs-bo)"/>
-          <circle cx="120" cy="120" r="41" stroke="url(#ogs-bi)"/>
-        </g>
-
-        <g class="og-seal-txt">
-          <use href="#ogs-te" fill="#050605" opacity=".75" transform="translate(0 1.2)"/>
-          <use href="#ogs-te" fill="#e8933a" opacity=".4" filter="url(#ogs-gl)"/>
-          <use href="#ogs-te" fill="url(#ogs-tx)"/>
-        </g>
-
-        <circle cx="120" cy="120" r="113" fill="url(#ogs-sh)"/>
-        <path d="M14.75 81.7A112 112 0 0 1 81.7 14.75" fill="none" stroke="url(#ogs-rm)" stroke-width=".9" stroke-linecap="round"/>
-        <path d="M225.25 158.3A112 112 0 0 1 158.3 225.25" fill="none" stroke="#d8d5ca" stroke-opacity=".1" stroke-width=".8" stroke-linecap="round"/>
+      <svg class="og-seal" viewBox="0 0 132 132" aria-hidden="true">
+        <circle cx="66" cy="66" r="63" fill="#14170f" stroke="#35382f" stroke-width="2"/>
+        <circle cx="66" cy="66" r="48" fill="none" stroke="#8a6a3a"/>
+        <path d="M66 18V114M18 66H114M32 32L100 100M100 32L32 100" stroke="#20231d" stroke-width="8"/>
+        <g fill="#35382f"><circle cx="66" cy="8" r="2.5"/><circle cx="66" cy="124" r="2.5"/><circle cx="8" cy="66" r="2.5"/><circle cx="124" cy="66" r="2.5"/><circle cx="25" cy="25" r="2.5"/><circle cx="107" cy="25" r="2.5"/><circle cx="25" cy="107" r="2.5"/><circle cx="107" cy="107" r="2.5"/></g>
+        <circle cx="66" cy="66" r="27" fill="#191c17" stroke="#e8933a" stroke-width="2"/>
+        <text x="66" y="75" text-anchor="middle" font-family="IBM Plex Sans Condensed, Arial Narrow, Arial, sans-serif" font-weight="700" font-size="26" fill="#e8933a">OG</text>
       </svg>
       PROJET OG
       <span class="og-page-sub">SYSTÈME D’ACCÈS SÉCURISÉ</span>
@@ -1916,4 +1806,128 @@
   }
 
   // --- Podium « escalier » : plus la place est haute, plus l'encart est grand ---
-  const podEl = document.getElementById("og-podium"), podStage = document.getElementById("o
+  const podEl = document.getElementById("og-podium"), podStage = document.getElementById("og-podium-stage");
+  let podOpen = false, podTimer = null;
+  const scaleOf = function (r) { return r === 1 ? 1.5 : r === 2 ? 1.25 : r === 3 ? 1.12 : Math.max(0.72, 1 - 0.08 * (r - 4)); };
+  function setCol(col, r, delay, max) {
+    col.style.setProperty("--s", scaleOf(r.rank));
+    col.style.setProperty("--d", delay + "s");
+    col.style.setProperty("--h", Math.max(0.12, Math.max(0, r.total) / max));
+    const tc = col.querySelector(".og-tc");
+    tc.className = "og-tc og-r" + rankClass(r.rank);
+    tc.innerHTML = '<span class="og-rk">' + r.rank + "</span><b>" + escapeHtml(r.team.name) + '</b><span class="og-tp">' + r.total + " PTS</span>";
+  }
+  function newCol(r, delay, max) {
+    const col = document.createElement("div");
+    col.className = "og-col";
+    col.dataset.id = String(r.team.id);
+    col.innerHTML = '<div class="og-tc"></div><div class="og-bar"></div>';
+    setCol(col, r, delay, max);
+    return col;
+  }
+  function renderPodium(intro) {
+    const rows = rankingData().rows;
+    if (!rows.length) { podStage.innerHTML = '<div class="og-empty" style="margin:auto">Aucune équipe classée pour l’instant.</div>'; return; }
+    const max = Math.max.apply(null, rows.map(function (r) { return Math.max(0, r.total); }).concat([1]));
+    let wrap = podStage.querySelector(".og-v2");
+    if (intro || !wrap) {
+      podStage.innerHTML = "";
+      wrap = document.createElement("div");
+      wrap.className = "og-v2 og-intro";
+      rows.forEach(function (r, i) { wrap.appendChild(newCol(r, (rows.length - 1 - i) * 0.4, max)); });
+      podStage.appendChild(wrap);
+      clearTimeout(podTimer);
+      podTimer = setTimeout(function () { wrap.classList.remove("og-intro"); }, (rows.length * 0.4 + 2.2) * 1000);
+      return;
+    }
+    const first = new Map(), cols = new Map();
+    Array.prototype.forEach.call(wrap.children, function (c) { first.set(c.dataset.id, c.getBoundingClientRect().left); cols.set(c.dataset.id, c); });
+    const keep = new Set(rows.map(function (r) { return String(r.team.id); }));
+    cols.forEach(function (c, id) { if (!keep.has(id)) { c.remove(); cols.delete(id); } });
+    rows.forEach(function (r) {
+      const id = String(r.team.id);
+      let col = cols.get(id);
+      if (col) setCol(col, r, 0, max);
+      else { col = newCol(r, 0, max); col.classList.add("og-new"); }
+      wrap.appendChild(col);
+    });
+    Array.prototype.forEach.call(wrap.children, function (c) {
+      if (!first.has(c.dataset.id)) return;
+      const dx = first.get(c.dataset.id) - c.getBoundingClientRect().left;
+      if (dx) { c.style.transition = "none"; c.style.transform = "translateX(" + dx + "px)"; void c.offsetWidth; c.style.transition = ""; c.style.transform = ""; }
+    });
+  }
+  function openPodium() { podOpen = true; podEl.hidden = false; document.documentElement.style.overflow = "hidden"; renderPodium(true); }
+  function closePodium() { podOpen = false; podEl.hidden = true; document.documentElement.style.overflow = ""; }
+  const rankTitle = document.getElementById("og-rank-open");
+  rankTitle.addEventListener("click", openPodium);
+  rankTitle.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPodium(); } });
+  document.getElementById("og-podium-close").addEventListener("click", closePodium);
+  document.getElementById("og-podium-replay").addEventListener("click", function () { renderPodium(true); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && podOpen) closePodium(); });
+
+  // ---------- Connexion ----------
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const identifier = document.getElementById("og-identifier").value.trim();
+    const password = document.getElementById("og-password").value;
+
+    statusEl.className = "og-status";
+    statusEl.textContent = "VÉRIFICATION EN COURS...";
+
+    try {
+      const { ok, result } = await callFunction("login", { identifier, password });
+
+      if (!ok) {
+        statusEl.className = "og-status denied";
+        statusEl.textContent = "ACCÈS REFUSÉ — " + (result.error || "IDENTIFIANTS INVALIDES");
+        return;
+      }
+
+      appState.role = result.role;
+      appState.reveal = result.reveal;
+      appState.me = result.me || null;
+      appState.points = result.points || [];
+      appState.serverPoints = appState.points.slice();
+      appState.cards = result.cards || [];
+      appState.identifier = identifier;
+      appState.password = password;
+      appState.teams = result.teams || [];
+      appState.epreuves = result.epreuves || [];
+      appState.participants = result.participants || [];
+      if (result.role === "admin") {
+        appState.adminIdentifier = identifier;
+        appState.adminPassword = password;
+      }
+      loadExtras();
+
+      statusEl.className = "og-status granted";
+      const label = result.role === "admin" ? "ACCÈS ADMINISTRATEUR" : "ACCÈS AUTORISÉ";
+      scrambleReveal(label + "\n" + result.reveal);
+      form.querySelectorAll("input, button").forEach(function (el) { el.disabled = true; });
+      setPasswordVisible(false);
+
+      setTimeout(function () {
+        const wantCards = cardNeeded();
+        if (window.VaultOG) {
+          // Coffre 3D : écran sombre -> page de l'événement, puis cartes des agents si besoin
+          VaultOG.play({
+            force: true,
+            onCovered: function () { prepareDashboard(); if (wantCards) prepareCards(); },
+            onDone: function () { if (wantCards) runCards(); }
+          });
+        } else {
+          prepareDashboard();
+          if (wantCards) { prepareCards(); runCards(); }
+        }
+      }, 1100);
+    } catch (err) {
+      statusEl.className = "og-status denied";
+      statusEl.textContent = "ERREUR DE CONNEXION AU SYSTÈME — RÉESSAIE";
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
