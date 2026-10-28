@@ -409,7 +409,7 @@
   .og-card.og-pulse { animation: og-card-pulse 1.3s ease-in-out 1; }
   .og-card-head { font-weight: 600; font-size: 1.05em; letter-spacing: .05em; padding-bottom: .5em; border-bottom: 1px solid var(--line); }
   .og-card-f span { display: block; font-size: .66em; letter-spacing: .08em; color: var(--muted); }
-  .og-card-f b { display: block; margin-top: .15em; font-weight: 600; letter-spacing: .12em; color: var(--muted); overflow-wrap: anywhere; }
+  .og-card-f b { display: block; margin-top: .15em; font-weight: 600; letter-spacing: .12em; color: var(--muted); font-size: min(1em, max(6px, calc((var(--w, 90px) - 1.5em - 2px) / (var(--wl, 8) * .68)))); overflow-wrap: break-word; }
   .og-card.og-known .og-card-f b { color: var(--text); letter-spacing: .04em; }
   .og-card.og-big { position: fixed; z-index: 20; font-size: calc(var(--w) / 11); animation: none; border-color: var(--team, var(--amber)); box-shadow: 0 0 0 1px var(--team, var(--amber)), 0 24px 60px rgba(0,0,0,.65); transform-origin: center; }
   .og-card.og-big::after { background: var(--team, var(--amber)); }
@@ -461,16 +461,17 @@
   .og-rk1::before { background: var(--gold); }
   .og-rk2::before { background: var(--silver); }
   .og-rk3::before { background: var(--bronze); }
-  .og-rk-th { display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; }
+  .og-rk-th { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 14px; cursor: pointer; }
   .og-rk-th:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
   .og-rk-n { min-width: 1.4em; font-size: 26px; font-weight: 600; }
   .og-rk1 .og-rk-n { color: var(--gold); }
   .og-rk2 .og-rk-n { color: var(--silver); }
   .og-rk3 .og-rk-n { color: var(--bronze); }
-  .og-rk-th b { flex: 1; font-size: 16px; letter-spacing: .08em; overflow-wrap: anywhere; }
+  .og-rk-th b { flex: 1 1 8em; font-size: 16px; letter-spacing: .08em; overflow-wrap: break-word; }
   .og-rk-tp { font-size: 22px; font-weight: 600; color: var(--amber); }
   .og-rk-tp small { font-size: 10px; color: var(--muted); }
   .og-rk-th i { font-style: normal; color: var(--muted); transition: transform .2s; }
+  @media (max-width: 359px) { .og-rk-th { gap: 6px 8px; padding: 12px 10px; } .og-rk-n { font-size: 22px; } .og-rk-th b { font-size: 13px; letter-spacing: .04em; } .og-rk-tp { font-size: 18px; } }
   .og-shut .og-rk-th i { transform: rotate(-90deg); }
   .og-rk-td { padding: 0 14px 12px; }
   .og-shut .og-rk-td { display: none; }
@@ -485,21 +486,28 @@
   .og-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .og-chip-on, .og-chip-on:hover { background: var(--amber); border-color: var(--amber); color: var(--bg); }
   .og-pr { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--line); }
-  .og-pr b { flex: 1; font-size: 13px; overflow-wrap: anywhere; }
+  .og-pr b { flex: 1; font-size: 13px; overflow-wrap: break-word; }
   .og-pr .og-tag { font-size: 10px; color: var(--muted); }
   .og-pr .og-btn-small { min-width: 38px; padding: 8px 6px; }
   .og-pr input { width: 62px; padding: 8px 4px; text-align: center; font-size: 16px; }
+  /* Mobile : le nom prend toute la largeur au-dessus des boutons, aucun mot n'est coupé */
+  @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+    .og-pr { display: grid; grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; gap: 8px 6px; padding: 10px 0; }
+    .og-pr b { grid-column: 1 / -1; font-size: 14px; line-height: 1.35; }
+    .og-pr .og-btn-small, .og-pr input { width: 100%; min-width: 0; }
+  }
   .og-podium { position: fixed; inset: 0; z-index: 8000; padding: 12px 12px calc(40px + env(safe-area-inset-bottom, 0px)); overflow: auto; background-color: var(--bg); background-image: var(--grid); background-size: 40px 40px; color-scheme: dark; }
   .og-podium-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
   .og-podium-head h2 { width: 100%; margin: 6px 0 2px; text-align: center; font: 700 20px var(--sans); letter-spacing: .22em; color: var(--text); }
   .og-podium-stage { min-height: 68vh; display: flex; padding-top: 18px; }
   .og-v2 { flex: none; margin: auto; display: flex; align-items: flex-end; gap: 8px; padding: 0 4px 8px; }
-  .og-col { flex: none; display: flex; flex-direction: column; gap: 8px; width: calc(var(--s, 1) * 112px); transition: transform .8s cubic-bezier(.2,.8,.2,1), width .8s; }
+  /* La colonne s'élargit si besoin pour que le plus long mot du nom tienne entier (--wl = longueur de ce mot) */
+  .og-col { flex: none; display: flex; flex-direction: column; gap: 8px; container-type: inline-size; width: calc(var(--s, 1) * 112px); width: max(calc(var(--s, 1) * 112px), calc(var(--wl, 0) * 6.4px + var(--s, 1) * 23.4px + 8px)); transition: transform .8s cubic-bezier(.2,.8,.2,1), width .8s; }
   .og-col.og-new { animation: og-pop .6s cubic-bezier(.2,.8,.2,1) both; }
-  .og-tc { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "rk n" "rk p"; column-gap: .7em; align-items: center; padding: .7em .9em; font-size: calc(var(--s, 1) * 13px); border: 1px solid var(--line); background: var(--surface); transition: font-size .8s; }
-  .og-tc .og-rk { grid-area: rk; font-size: 1.9em; font-weight: 600; }
-  .og-tc b { grid-area: n; font-size: 1.05em; overflow-wrap: anywhere; }
-  .og-tc .og-tp { grid-area: p; font-size: .82em; color: var(--muted); }
+  .og-tc { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "rk p" "n n"; column-gap: .7em; row-gap: .3em; align-items: baseline; padding: .7em .9em; font-size: calc(var(--s, 1) * 13px); border: 1px solid var(--line); background: var(--surface); transition: font-size .8s; }
+  .og-tc .og-rk { grid-area: rk; font-size: 1.9em; font-weight: 600; line-height: 1; }
+  .og-tc b { grid-area: n; font-size: 1.05em; font-size: max(10px, min(1.05em, calc((100cqw - 1.9em - 6px) / (var(--wl, 10) * .64)))); overflow-wrap: break-word; }
+  .og-tc .og-tp { grid-area: p; justify-self: end; font-size: .82em; color: var(--muted); }
   .og-tc.og-r1 { border-color: var(--gold); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
   .og-tc.og-r1 .og-rk { color: var(--gold); }
   .og-tc.og-r2 .og-rk { color: var(--silver); }
@@ -523,12 +531,12 @@
   .og-tx-head { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 16px 14px 12px; background: transparent; border: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
   .og-tx-head:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
   .og-tx-ref { flex: none; font-size: 11px; font-weight: 600; letter-spacing: .16em; color: var(--amber); white-space: nowrap; }
-  .og-tx-title { flex: 1; font: 700 17px/1.25 var(--sans); letter-spacing: .08em; overflow-wrap: anywhere; }
+  .og-tx-title { flex: 1; font: 700 17px/1.25 var(--sans); letter-spacing: .08em; overflow-wrap: break-word; }
   .og-tx-head i { flex: none; font-style: normal; color: var(--muted); transition: transform .2s; }
   .og-tx.og-shut .og-tx-head i { transform: rotate(-90deg); }
   .og-tx-body { padding: 0 14px 14px; }
   .og-tx.og-shut .og-tx-body { display: none; }
-  .og-tx-text { margin: 0; font: 400 15px/1.6 var(--sans); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .og-tx-text { margin: 0; font: 400 15px/1.6 var(--sans); white-space: pre-wrap; overflow-wrap: break-word; }
   .og-tx-media { display: block; margin-top: 12px; border: 1px solid var(--line); background: var(--bg); }
   .og-tx-media img { display: block; width: 100%; height: auto; }
   .og-tx-file { display: inline-block; margin-top: 12px; text-decoration: none; }
@@ -543,7 +551,7 @@
   .og-members { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
   .og-members-title { font-size: 10px; letter-spacing: .16em; color: var(--muted); margin-bottom: 6px; }
   .og-members ul { margin: 0; padding: 0; list-style: none; }
-  .og-members li { font: 400 14px/1.6 var(--sans); overflow-wrap: anywhere; }
+  .og-members li { font: 400 14px/1.6 var(--sans); overflow-wrap: break-word; }
   .og-members li b { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--muted); margin-right: 6px; }
   .og-me-tag { font-size: 10px; font-weight: 600; letter-spacing: .12em; color: var(--amber); }
   .og-badge-mine { border-color: var(--amber); background: var(--amber); color: var(--bg); }
@@ -916,6 +924,11 @@
     const div = document.createElement("div");
     div.textContent = str == null ? "" : String(str);
     return div.innerHTML;
+  }
+
+  // Longueur (en caractères) du plus long mot d'un texte : sert à dimensionner les noms sans jamais couper un mot
+  function longestWord(str) {
+    return String(str == null ? "" : str).split(/[\s\-–—]+/).reduce(function (m, w) { return Math.max(m, Array.from(w).length); }, 0);
   }
 
   function scrambleReveal(finalText) {
@@ -1558,7 +1571,7 @@
   function cardHTML(n, v) {
     return '<div class="og-card-head">AGENT #' + padNum(n) + "</div>" +
       [["NOM", v[0]], ["PRÉNOM", v[1]], ["ÉQUIPE", v[2]]].map(function (f) {
-        return '<div class="og-card-f"><span>' + f[0] + "</span><b>" + escapeHtml(f[1]) + "</b></div>";
+        return '<div class="og-card-f"><span>' + f[0] + '</span><b style="--wl:' + longestWord(f[1]) + '">' + escapeHtml(f[1]) + "</b></div>";
       }).join("");
   }
 
@@ -1617,7 +1630,9 @@
     c.querySelector(".og-lbl").textContent = show ? "CACHER" : "RÉVÉLER";
     const me = appState.me;
     const vals = show ? [me.nom || MASK, me.prenom || MASK, me.equipe || MASK] : [MASK, MASK, MASK];
-    await Promise.all(Array.prototype.map.call(cardsBig.querySelectorAll(".og-card-f b"), function (b, i) { return scrambleText(b, vals[i]); }));
+    const fields = cardsBig.querySelectorAll(".og-card-f b");
+    Array.prototype.forEach.call(fields, function (b, i) { b.style.setProperty("--wl", longestWord(vals[i])); });
+    await Promise.all(Array.prototype.map.call(fields, function (b, i) { return scrambleText(b, vals[i]); }));
   }
 
   // La carte du joueur quitte le mur et vient devant les autres
@@ -1921,6 +1936,7 @@
   const scaleOf = function (r) { return r === 1 ? 1.5 : r === 2 ? 1.25 : r === 3 ? 1.12 : Math.max(0.72, 1 - 0.08 * (r - 4)); };
   function setCol(col, r, delay, max) {
     col.style.setProperty("--s", scaleOf(r.rank));
+    col.style.setProperty("--wl", longestWord(r.team.name));
     col.style.setProperty("--d", delay + "s");
     col.style.setProperty("--h", Math.max(0.12, Math.max(0, r.total) / max));
     const tc = col.querySelector(".og-tc");
