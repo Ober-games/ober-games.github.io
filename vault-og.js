@@ -1114,7 +1114,7 @@ function build(iw,ip,ia,ih){
  root.appendChild(renderer.domElement);root.appendChild(vig);root.appendChild(veil);document.body.appendChild(root);
 
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d0b0a);
- const cam=new THREE.PerspectiveCamera(38,1,.1,100);
+ const cam=new THREE.PerspectiveCamera(38,1,1,100);
 
  /* Reflets : panneaux lumineux doux, ambre sur les côtés */
  const envS=new THREE.Scene();
@@ -1132,7 +1132,9 @@ function build(iw,ip,ia,ih){
  const pivot=new THREE.Group();pivot.position.x=-R;scene.add(pivot);
  const door=new THREE.Group();door.position.x=R;pivot.add(door);
  const photoG=new THREE.Group();door.add(photoG);
- const disc=(r,h,m,z)=>{const g=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,128),m);g.rotation.x=PI/2;g.position.z=z;photoG.add(g);return g};
+ /* Correctif mobile : on masque le dessus (noFront) de la tranche de porte, sinon il se superpose a la plaque de porte (z-fighting) */
+ const nocap=new THREE.MeshBasicMaterial({visible:false});
+ const disc=(r,h,m,z,noFront)=>{const g=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,128),noFront?[m,nocap,m]:m);g.rotation.x=PI/2;g.position.z=z;photoG.add(g);return g};
  const tor=(r,t,m,z)=>{const g=new THREE.Mesh(new THREE.TorusGeometry(r,t,24,128),m);g.position.z=z;photoG.add(g);return g};
  const slides=[];
 
@@ -1155,7 +1157,7 @@ function build(iw,ip,ia,ih){
  rt.wrapT=THREE.ClampToEdgeWrapping;
  rimM=M(0xaaaaaa,.4,.55,.6,{map:rt,emissive:0xffffff,emissiveMap:rt,emissiveIntensity:.55,roughnessMap:null})}catch(e){rimM=M(0x2a2623,.8,.5,.7)}
  const fm=M(0x2a2623,.8,.5,.7),hw=M(0x45403b,.9,.38,.9),bz=M(0x6e4c2a,.9,.4,.8);
- disc(R,.335,rimM,.1325);tor(R,.025,dark,.14);disc(RP,.7,rimM,-.385);
+ disc(R,.335,rimM,.1325,true);tor(R,.025,dark,.14);disc(RP,.7,rimM,-.385);
  tor(RP+.09,.07,dark,-.06);tor(RP,.045,bz,-.73);disc(RP-.02,.05,dark,-.76);
  ANG.forEach(a=>{const g=new THREE.Group();g.rotation.z=a*PI/180;g.position.z=-.55;photoG.add(g);
   const hs=new THREE.Mesh(new THREE.CylinderGeometry(.3,.27,.34,32),bz);hs.rotation.z=PI/2;hs.position.x=RP-.04;g.add(hs);
