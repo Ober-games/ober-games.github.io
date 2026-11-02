@@ -1992,6 +1992,232 @@
   document.getElementById("og-podium-replay").addEventListener("click", function () { renderPodium(true); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && podOpen) closePodium(); });
 
+  // ---------- Emblèmes d'équipe : photo, agrandissement, classement, podium ----------
+  (function () {
+    if (window.__ogEmblems) return;
+    window.__ogEmblems = true;
+    var BASE = SUPABASE_URL + "/storage/v1/object/public/team-emblems/";
+    var PAGE_V = Date.now(), ver = {}, missing = {}, file = null, remove = false, lb = null;
+    var key = function (id) { return String(id); };
+    var gone = function (id) { return (missing[key(id)] || 0) > Date.now() - 60000; };
+    var url = function (id) { return BASE + encodeURIComponent(key(id)) + ".png?v=" + (ver[key(id)] || PAGE_V); };
+    var teamOf = function (id) { return appState.teams.find(function (t) { return key(t.id) === key(id); }); };
+
+    // ----- Style (thème bunker : cadre aux couleurs de l'équipe, coins orange) -----
+    var st = document.createElement("style");
+    st.textContent = [
+      ".og-emblem{position:relative;flex:none;display:block;width:56px;height:56px;padding:0;border:1px solid var(--team,var(--line));background:var(--bg);cursor:zoom-in;transition:border-color .15s,transform .15s}",
+      ".og-emblem img{display:block;width:100%;height:100%;object-fit:contain}",
+      ".og-emblem::before,.og-emblem::after{content:'';position:absolute;width:9px;height:9px;border:0 solid var(--team,var(--amber));pointer-events:none}",
+      ".og-emblem::before{left:-4px;top:-4px;border-width:2px 0 0 2px}",
+      ".og-emblem::after{right:-4px;bottom:-4px;border-width:0 2px 2px 0}",
+      ".og-emblem:hover{border-color:var(--amber);transform:scale(1.05)}",
+      ".og-emblem:focus-visible{outline:2px solid var(--amber);outline-offset:5px}",
+      ".og-emblem.og-sm{width:34px;height:34px}",
+      ".og-emblem.og-pod{width:calc(var(--s,1)*52px);height:calc(var(--s,1)*52px);align-self:center;margin:4px 0}",
+      ".og-item-header .og-emblem{margin:3px 4px 3px 3px}",
+      ".og-item-header .og-emblem+strong{flex:1;min-width:0}",
+      ".og-intro .og-emblem{animation:og-drop .6s cubic-bezier(.2,.8,.2,1) calc(var(--d,0s) + .6s) both}",
+      /* formulaire admin */
+      ".og-emb-field{display:flex;align-items:center;gap:14px;flex-wrap:wrap}",
+      ".og-emb-prev{width:76px;height:76px;flex:none;display:flex;align-items:center;justify-content:center;border:1px dashed var(--line);background:var(--bg);font:600 9px/1.4 var(--mono);letter-spacing:.12em;color:var(--muted);text-align:center}",
+      ".og-emb-prev.og-has{border:1px solid var(--amber)}",
+      ".og-emb-prev img{display:block;width:100%;height:100%;object-fit:contain}",
+      ".og-emb-actions{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}",
+      ".og-emb-btns{display:flex;gap:8px;flex-wrap:wrap}",
+      ".og-emb-actions small{font-size:10px;letter-spacing:.08em;color:var(--muted)}",
+      /* agrandissement */
+      ".og-lb{position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;background:rgba(13,15,12,.93);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);cursor:zoom-out;touch-action:pinch-zoom;animation:og-lb-in .22s ease-out}",
+      ".og-lb-frame{position:relative;border:1px solid var(--team,var(--amber));background:var(--bg);box-shadow:0 24px 60px rgba(0,0,0,.65);animation:og-lb-pop .3s cubic-bezier(.2,.8,.2,1)}",
+      ".og-lb-frame img{display:block;max-width:min(88vw,560px);max-height:62vh;object-fit:contain}",
+      ".og-lb-frame::before,.og-lb-frame::after{content:'';position:absolute;width:16px;height:16px;border:0 solid var(--team,var(--amber));pointer-events:none}",
+      ".og-lb-frame::before{left:-7px;top:-7px;border-width:3px 0 0 3px}",
+      ".og-lb-frame::after{right:-7px;bottom:-7px;border-width:0 3px 3px 0}",
+      ".og-lb-name{max-width:90vw;font:700 22px var(--sans);letter-spacing:.14em;text-align:center;color:var(--text);overflow-wrap:break-word}",
+      ".og-lb-tag{padding:3px 10px;font:600 11px var(--mono);letter-spacing:.14em;background:var(--team,var(--amber));color:var(--bg)}",
+      ".og-lb small{font:400 11px var(--mono);letter-spacing:.16em;color:var(--muted)}",
+      "@keyframes og-lb-in{from{opacity:0}to{opacity:1}}",
+      "@keyframes og-lb-pop{from{transform:scale(.92)}to{transform:none}}",
+      "@media (prefers-reduced-motion:reduce){.og-lb,.og-lb-frame,.og-intro .og-emblem{animation:none}.og-emblem{transition:none}}"
+    ].join("");
+    document.head.appendChild(st);
+
+    // ----- Emblème : bouton cadré (clic = agrandir), retiré tout seul si l'image n'existe pas -----
+    function makeEmblem(id, cls) {
+      var t = teamOf(id), b = document.createElement("button"), im = new Image();
+      b.type = "button";
+      b.className = "og-emblem" + (cls ? " " + cls : "");
+      b.dataset.team = key(id);
+      b.setAttribute("aria-label", "Agrandir l’emblème" + (t ? " de l’équipe " + t.name : ""));
+      im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.src = url(id);
+      im.onerror = function () { missing[key(id)] = Date.now(); b.remove(); };
+      b.appendChild(im);
+      return b;
+    }
+    function place(host, before, id, cls) {
+      if (!host || gone(id)) return;
+      var cur = host.querySelector(":scope > .og-emblem"), col = teamColorOf(id);
+      if (!cur) { cur = makeEmblem(id, cls); host.insertBefore(cur, before || host.firstChild); }
+      if (col) cur.style.setProperty("--team", col); else cur.style.removeProperty("--team");
+    }
+
+    // ----- Affichage : cartes d'équipe, classement, podium -----
+    var baseTeams = renderTeams;
+    renderTeams = function () {
+      baseTeams();
+      var items = document.getElementById("og-teams-list").children;
+      appState.teams.forEach(function (t, i) {
+        place(items[i] && items[i].querySelector(".og-item-header"), null, t.id, "");
+      });
+    };
+    var baseRank = renderRanking;
+    renderRanking = function () {
+      baseRank();
+      rankEls.forEach(function (el, id) {
+        var th = el.querySelector(".og-rk-th");
+        place(th, th && th.querySelector("b"), id, "og-sm");
+      });
+    };
+    var basePod = renderPodium;
+    renderPodium = function (intro) {
+      basePod(intro);
+      Array.prototype.forEach.call(podStage.querySelectorAll(".og-col"), function (c) { place(c, null, c.dataset.id, "og-pod"); });
+    };
+
+    // ----- Agrandissement (clic ou toucher sur un emblème) -----
+    function closeLb() { if (lb) { lb.remove(); lb = null; } }
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest(".og-emblem");
+      if (!b) return;
+      e.stopPropagation();   // n'ouvre pas / ne referme pas la ligne du classement
+      closeLb();
+      var id = b.dataset.team, t = teamOf(id), col = teamColorOf(id), src = b.querySelector("img");
+      lb = document.createElement("div");
+      lb.className = "og-lb";
+      lb.setAttribute("role", "dialog");
+      lb.setAttribute("aria-label", "Emblème agrandi");
+      if (col) lb.style.setProperty("--team", col);
+      var fr = document.createElement("div"), im = new Image();
+      fr.className = "og-lb-frame";
+      im.alt = t ? "Emblème de l’équipe " + t.name : "";
+      im.src = (src && (src.currentSrc || src.src)) || url(id);
+      fr.appendChild(im);
+      lb.appendChild(fr);
+      if (t) { var nm = document.createElement("div"); nm.className = "og-lb-name"; nm.textContent = t.name; lb.appendChild(nm); }
+      if (myTeamId() === key(id)) {
+        var tag = document.createElement("div");
+        tag.className = "og-lb-tag"; tag.textContent = "VOTRE ÉQUIPE";
+        if (col) tag.style.color = inkOn(col);
+        lb.appendChild(tag);
+      }
+      var hint = document.createElement("small");
+      hint.textContent = "TOUCHE POUR FERMER";
+      lb.appendChild(hint);
+      lb.addEventListener("click", closeLb);
+      document.body.appendChild(lb);
+    }, true);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && lb) { e.stopPropagation(); closeLb(); }
+    }, true);
+
+    // ----- Formulaire d'équipe (admin) : choix de l'image avec aperçu -----
+    var box = document.createElement("div");
+    box.innerHTML =
+      '<label>Emblème de l’équipe</label><div class="og-emb-field">' +
+      '<div class="og-emb-prev" id="og-emb-prev">AUCUN<br>EMBLÈME</div>' +
+      '<div class="og-emb-actions"><div class="og-emb-btns">' +
+      '<button type="button" class="og-btn-small" id="og-emb-pick">CHOISIR UNE IMAGE</button>' +
+      '<button type="button" class="og-btn-small og-btn-danger" id="og-emb-del" hidden>RETIRER</button></div>' +
+      '<small>PNG ou JPG · réduite à 512 px · transparence conservée</small></div>' +
+      '<input type="file" id="og-emb-file" accept="image/*" hidden></div>';
+    document.getElementById("og-team-desc").after(box);
+    var prev = document.getElementById("og-emb-prev"), del = document.getElementById("og-emb-del"), input = document.getElementById("og-emb-file");
+
+    function showPrev(src) {
+      prev.classList.toggle("og-has", !!src);
+      del.hidden = !src;
+      if (!src) { prev.innerHTML = "AUCUN<br>EMBLÈME"; return; }
+      var im = new Image();
+      im.alt = "";
+      im.onerror = function () { showPrev(""); };
+      im.src = src;
+      prev.innerHTML = "";
+      prev.appendChild(im);
+    }
+    function resetField(team) {
+      file = null; remove = false; input.value = "";
+      showPrev(team && !gone(team.id) ? url(team.id) : "");
+    }
+    document.getElementById("og-emb-pick").addEventListener("click", function () { input.click(); });
+    input.addEventListener("change", function () {
+      file = (input.files && input.files[0]) || null; remove = false;
+      if (file) showPrev(URL.createObjectURL(file));
+    });
+    del.addEventListener("click", function () { file = null; remove = true; input.value = ""; showPrev(""); });
+
+    var baseOpen = openTeamForm;
+    openTeamForm = function (team) { baseOpen(team); resetField(team); };
+
+    // Réduit l'image à 512 px max (PNG : le fond transparent est conservé)
+    function shrink(f) {
+      return new Promise(function (ok, ko) {
+        var u = URL.createObjectURL(f), im = new Image();
+        im.onload = function () {
+          var k = Math.min(1, 512 / Math.max(im.width, im.height)), c = document.createElement("canvas");
+          c.width = Math.max(1, Math.round(im.width * k));
+          c.height = Math.max(1, Math.round(im.height * k));
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(u);
+          ok(c.toDataURL("image/png"));
+        };
+        im.onerror = function () { URL.revokeObjectURL(u); ko(new Error("image illisible")); };
+        im.src = u;
+      });
+    }
+
+    async function send(teamId) {
+      if (!file && !remove) return;
+      try {
+        var up = !!file;
+        var r = await callFunction("admin-manage", {
+          adminIdentifier: appState.adminIdentifier,
+          adminPassword: appState.adminPassword,
+          action: up ? "set_team_emblem" : "remove_team_emblem",
+          id: key(teamId),
+          fields: up ? { image: await shrink(file) } : null
+        });
+        if (!r.ok) throw new Error(r.result.error || "erreur serveur");
+        ver[key(teamId)] = Date.now();
+        if (up) delete missing[key(teamId)]; else missing[key(teamId)] = Date.now();
+      } catch (err) {
+        alert("Équipe enregistrée, mais l’emblème n’a pas pu être envoyé : " + (err.message || "erreur de connexion"));
+      }
+      file = null; remove = false;
+      document.querySelectorAll(".og-emblem").forEach(function (n) { n.remove(); });
+      renderTeams(); renderRanking();
+      if (podOpen) renderPodium(false);
+    }
+
+    // ENREGISTRER : enregistre l'équipe, puis envoie l'emblème choisi (remplace l'ancien gestionnaire du bouton)
+    var btn = document.getElementById("og-team-form-submit"), fresh = btn.cloneNode(true);
+    btn.replaceWith(fresh);
+    fresh.addEventListener("click", async function () {
+      var name = document.getElementById("og-team-name").value.trim();
+      var description = document.getElementById("og-team-desc").value.trim();
+      if (!name) return;
+      var before = appState.teams.map(function (t) { return key(t.id); });
+      var editing = appState.editingTeamId;
+      var done = editing
+        ? await adminAction("update_team", editing, { name: name, description: description })
+        : await adminAction("create_team", null, { name: name, description: description });
+      if (!done) return;
+      var made = editing ? null : appState.teams.find(function (t) { return before.indexOf(key(t.id)) < 0; });
+      var id = editing || (made && made.id);
+      if (id != null) await send(id);
+      closeTeamForm();
+    });
+  })();
+
   // ---------- Connexion ----------
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
