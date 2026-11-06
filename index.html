@@ -755,6 +755,11 @@
         </div>
       </section>
 
+      <section class="og-section og-admin-only" id="og-photo-section">
+        <h2 class="og-section-title">GESTION DU CONCOURS PHOTO</h2>
+        <div id="og-photo-admin-box"></div>
+      </section>
+
       <section class="og-section" id="og-transmissions-section">
         <h2 class="og-section-title">TRANSMISSIONS</h2>
         <div id="og-transmissions-list"></div>
@@ -837,6 +842,1794 @@
 
 <!-- Animation du coffre (3D) : le fichier vault-og.js doit être dans le même dossier que index.html -->
 <script src="vault-og.js?v=3"></script>
+<!-- OG-PHOTO-MODULE:START — Concours photo (interface participants + administrateur) -->
+<script>
+/* =============================================================================
+   LE GRAND CONCOURS PHOTO — Ober'Games 2027 — interface (participants + administrateur)
+   Fichier à placer à côté de index.html (comme vault-og.js).
+   Rien ne s'affiche tant que le concours n'est pas déployé et révélé côté serveur :
+   si ce fichier est absent ou si la base n'est pas prête, le reste du site fonctionne
+   exactement comme avant.
+   ============================================================================= */
+(function (global) {
+  "use strict";
+  // ======================================================================
+  //  Outils
+  // ======================================================================
+  var CHUNK = 6 * 1024 * 1024; // taille de morceau imposée par Supabase Storage (TUS)
+  var ALLOWED = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic", "image/heif": "heif", "image/avif": "avif" };
+  var EXT_TYPE = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic", heif: "image/heif", avif: "image/avif" };
+
+  var cfg = null;
+  var S = {
+    state: null, skew: 0, started: false, timer: null, tick: null,
+    overlay: null, isOpen: false, tab: null, lbOpen: false, modalOpen: false,
+    queue: [], running: false,
+    mine: { items: [], loaded: false, loading: false },
+    gal: { items: [], more: false, next: null, loading: false, token: 0, loaded: false },
+    adm: { summary: null, items: [], more: false, next: null, loading: false, token: 0, team: "", author: "", sel: {}, verdict: null, loaded: false },
+    verdict: null
+  };
+
+  function h(tag, a, kids) {
+    var el = document.createElement(tag);
+    if (a) {
+      for (var k in a) {
+        if (!Object.prototype.hasOwnProperty.call(a, k)) continue;
+        var v = a[k];
+        if (v == null || v === false) continue;
+        if (k === "class") el.className = v;
+        else if (k === "text") el.textContent = v;
+        else if (k === "style") el.style.cssText = v;
+        else if (k.slice(0, 2) === "on" && typeof v === "function") el.addEventListener(k.slice(2), v);
+        else if (v === true) el.setAttribute(k, "");
+        else el.setAttribute(k, String(v));
+      }
+    }
+    if (kids) {
+      for (var i = 0; i < kids.length; i++) {
+        var c = kids[i];
+        if (c == null || c === false) continue;
+        el.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+      }
+    }
+    return el;
+  }
+  function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtBytes(n) {
+    n = Number(n) || 0;
+    if (n >= 1073741824) return (n / 1073741824).toFixed(2).replace(".", ",") + " Go";
+    if (n >= 1048576) return (n / 1048576).toFixed(1).replace(".", ",") + " Mo";
+    if (n >= 1024) return Math.round(n / 1024) + " Ko";
+    return n + " o";
+  }
+  function fmtCountdown(ms) {
+    if (ms <= 0) return "00:00:00";
+    var s = Math.floor(ms / 1000), d = Math.floor(s / 86400); s -= d * 86400;
+    var hh = Math.floor(s / 3600); s -= hh * 3600;
+    var mm = Math.floor(s / 60); s -= mm * 60;
+    return (d > 0 ? d + " j " : "") + pad(hh) + ":" + pad(mm) + ":" + pad(s);
+  }
+  function fmtDateTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    try { return d.toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
+    catch (e) { return d.toISOString(); }
+  }
+  function toLocalInput(iso) {
+    var d = new Date(iso);
+    if (!iso || isNaN(d.getTime())) return "";
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function uid() { return "q" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function nowMs() { return Date.now() + (S.skew || 0); }
+  function creds() { return cfg.getCreds(); }
+  function isAdmin() { var c = creds(); return !!(c && c.admin); }
+  function publicUrl(path) {
+    return cfg.url + "/storage/v1/object/public/photo-previews/" + String(path).split("/").map(encodeURIComponent).join("/");
+  }
+  function teamLabel(p) { return p.team_name ? String(p.team_name).toUpperCase() : "ÉQUIPE NON RÉVÉLÉE"; }
+
+  // ======================================================================
+  //  Appels serveur (même mécanique que le reste du site : clé publique + identifiants)
+  // ======================================================================
+  function postJson(url, body, extra) {
+    var headers = { "Content-Type": "application/json", apikey: cfg.key };
+    if (extra) for (var k in extra) headers[k] = extra[k];
+    return fetch(url, { method: "POST", headers: headers, body: JSON.stringify(body) }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+    });
+  }
+  // Fonction SQL og_photo_call : lecture + administration
+  function rpc(action, fields) {
+    var c = creds();
+    return postJson(cfg.url + "/rest/v1/rpc/og_photo_call", {
+      p_identifier: c.identifier, p_password: c.password, p_action: action, p_fields: fields || {}
+    }).then(function (r) {
+      var d = r.data;
+      if (!d || typeof d !== "object") return { error: "Réponse inattendue du serveur" };
+      if (!r.ok && !d.error) return { error: d.message || ("Erreur du serveur (" + r.status + ")") };
+      return d;
+    });
+  }
+  // Fonction Edge photo-sign : envois, suppression, téléchargement des originaux
+  function fn(action, payload) {
+    var c = creds();
+    var body = { action: action, identifier: c.identifier, password: c.password };
+    if (payload) for (var k in payload) body[k] = payload[k];
+    return postJson(cfg.url + "/functions/v1/photo-sign", body, { Authorization: "Bearer " + cfg.key }).then(function (r) {
+      var d = r.data || {};
+      if (!r.ok && !d.error) d.error = "Erreur du serveur (" + r.status + ")";
+      return d;
+    });
+  }
+  function offlineMsg() { return "Erreur de connexion au serveur."; }
+
+  // ======================================================================
+  //  État du concours (interrogé régulièrement)
+  // ======================================================================
+  function stateKey(st) {
+    if (!st) return "";
+    var c = {}; for (var k in st) if (k !== "now") c[k] = st[k];
+    return JSON.stringify(c);
+  }
+  function applyState(d) {
+    if (d.now) { var t = Date.parse(d.now); if (!isNaN(t)) S.skew = t - Date.now(); }
+    var prev = S.state;
+    S.state = d;
+    S.stateError = null;
+    if (stateKey(prev) !== stateKey(d)) onStateChanged(prev, d);
+    return d;
+  }
+  function refreshState() {
+    return rpc("state").then(function (d) {
+      if (d.error) { S.stateError = d.error; renderAdminBox(); return null; }
+      return applyState(d);
+    }).catch(function () { return null; });
+  }
+  function onStateChanged(prev, cur) {
+    var epChanged = !prev || (prev.available !== cur.available) || (prev.epreuve_id !== cur.epreuve_id) || (prev.open !== cur.open) || (prev.revealed !== cur.revealed);
+    if (epChanged && cfg && typeof cfg.onChange === "function") { try { cfg.onChange(); } catch (e) {} }
+    renderAdminBox();
+    if (S.isOpen) {
+      renderHead();
+      if (cur.available === false) { closeOverlay(); return; }
+      var revealedNow = cur.revealed && !(prev && prev.revealed);
+      if (S.tab === "send") { renderSendTop(); if (prev && prev.my_count !== cur.my_count) loadMine(); }
+      else if (S.tab === "gallery") { if (!prev || prev.total !== cur.total || prev.gallery_visible !== cur.gallery_visible) galleryReload(); }
+      else if (S.tab === "verdict") { if (revealedNow || (prev && prev.revealed !== cur.revealed)) renderBody(); }
+      else if (S.tab === "manage") { renderManageSettings(); }
+      if (revealedNow && S.tab !== "verdict" && !isAdmin()) toast("Le verdict est tombé : ouvre l’onglet VERDICT.", "ok");
+    }
+  }
+  function schedule() {
+    if (!S.started) return;
+    clearTimeout(S.timer);
+    S.timer = setTimeout(function () {
+      refreshState().then(function () { schedule(); });
+    }, S.isOpen ? 8000 : 30000);
+  }
+
+  // ======================================================================
+  //  Styles (injectés une seule fois ; mêmes variables et même univers que le site)
+  // ======================================================================
+  var CSS = `
+.ogp{position:fixed;inset:0;z-index:8500;display:flex;flex-direction:column;background-color:var(--bg);background-image:var(--grid);background-size:40px 40px;color:var(--text);font-family:var(--mono);color-scheme:dark}
+.ogp[hidden]{display:none!important}
+.ogp *{box-sizing:border-box}
+.ogp button{font-family:inherit}
+.ogp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line);background:var(--panel)}
+.ogp-title{font:700 16px/1.2 var(--sans);letter-spacing:.16em}
+.ogp-title small{display:block;margin-top:4px;font:400 10px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.ogp-tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
+.ogp-tab{flex:1 0 auto;min-height:46px;padding:0 16px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);font:600 12px var(--mono);letter-spacing:.12em;cursor:pointer}
+.ogp-tab[aria-selected=true]{color:var(--amber);border-bottom-color:var(--amber)}
+.ogp-tab:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.ogp-body{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:14px 12px calc(36px + env(safe-area-inset-bottom,0px))}
+.ogp-wrap{max-width:1100px;margin:0 auto}
+.ogp-lab{margin:0 0 6px;font-size:11px;letter-spacing:.14em;color:var(--amber)}
+.ogp-lab.m{color:var(--muted)}
+.ogp-h{margin:0 0 8px;font:700 22px/1.2 var(--sans);letter-spacing:.1em}
+.ogp-quote{margin:0 0 14px;color:var(--muted);font:italic 400 14px/1.5 var(--sans)}
+.ogp-muted{color:var(--muted);font-size:12px;line-height:1.5}
+.ogp-p{margin:0 0 10px;font:400 14px/1.5 var(--sans);color:var(--text)}
+.ogp-box{border:1px solid var(--line);background:var(--panel);padding:12px;margin-bottom:12px}
+.ogp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ogp-sp{justify-content:space-between}
+.ogp-tag{display:inline-block;border:1px solid var(--line);padding:3px 8px;font-size:11px;letter-spacing:.1em;white-space:nowrap}
+.ogp-tag.ok{border-color:var(--granted);color:var(--granted)}
+.ogp-tag.no{border-color:var(--denied);color:#e0715f}
+.ogp-tag.am{border-color:var(--amber);color:var(--amber)}
+.ogp .og-btn-small{min-height:44px;padding:8px 12px}
+.ogp .ogp-pri{background:var(--amber);border-color:var(--amber);color:var(--bg)}
+.ogp .ogp-pri:hover{background:#f2a652;border-color:#f2a652;color:var(--bg)}
+.ogp .ogp-pri:disabled{background:var(--raised);border-color:var(--line);color:var(--muted);cursor:default}
+.ogp .og-btn-small:disabled{opacity:.55;cursor:default}
+.ogp .ogp-sm{min-height:34px;padding:5px 8px;font-size:10px}
+.ogp-cd{font:700 26px/1.1 var(--sans);letter-spacing:.08em;color:var(--amber);margin-top:4px}
+.ogp-pick{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.ogp-pick .og-btn-small{flex:1 1 180px}
+.ogp-q{display:grid;grid-template-columns:88px 1fr;gap:10px;border:1px solid var(--line);background:var(--surface);padding:10px;margin-bottom:10px}
+.ogp-q-img{width:88px;aspect-ratio:4/3;object-fit:cover;background:var(--raised);display:block}
+.ogp-q-ph{width:88px;aspect-ratio:4/3;background:var(--raised);display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;color:var(--muted);letter-spacing:.08em}
+.ogp-q-name{font-size:12px;overflow-wrap:anywhere}
+.ogp-q-name small{color:var(--muted)}
+.ogp-q input,.ogp-q textarea,.ogp-set input,.ogp-set select,.ogp-fil select{width:100%;margin-top:6px;background:var(--bg);border:1px solid var(--line);border-radius:0;color:var(--text);font:inherit;font-size:16px;padding:8px}
+.ogp-q textarea{min-height:56px;resize:vertical}
+.ogp-q input:focus-visible,.ogp-q textarea:focus-visible,.ogp-set input:focus-visible,.ogp-set select:focus-visible,.ogp-fil select:focus-visible{outline:2px solid var(--amber);border-color:var(--amber)}
+.ogp-q-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ogp-bar{height:6px;background:var(--line);margin:8px 0 4px}
+.ogp-bar i{display:block;height:100%;width:0;background:var(--amber);transition:width .2s}
+.ogp-bar.ok i{background:var(--granted)}
+.ogp-bar.no i{background:var(--denied)}
+.ogp-st{font-size:12px;color:var(--muted);line-height:1.4}
+.ogp-st.no{color:#e0715f}
+.ogp-st.ok{color:var(--granted)}
+.ogp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.ogp-mini{position:relative;border:1px solid var(--line);background:var(--surface)}
+.ogp-mini img,.ogp-mini .noimg{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:var(--raised)}
+.ogp-mini .noimg{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);text-align:center;padding:4px}
+.ogp-mini .x{position:absolute;top:4px;right:4px;min-width:34px;min-height:34px;background:rgba(13,15,12,.82);border:1px solid var(--line);color:var(--text);cursor:pointer;font-size:14px}
+.ogp-mini .x:hover{border-color:var(--denied)}
+.ogp-mini .c{padding:4px 6px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ogp-mas{display:flex;gap:8px;align-items:flex-start}
+.ogp-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:8px}
+.ogp-ph{position:relative;display:block;width:100%;padding:0;border:1px solid var(--line);background:var(--surface);color:inherit;text-align:left;cursor:pointer;font:inherit}
+.ogp-ph:hover{border-color:var(--amber)}
+.ogp-ph:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.ogp-ph img{display:block;width:100%;height:auto;background:var(--raised)}
+.ogp-ph .noimg{display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;background:var(--raised);color:var(--muted);font-size:11px;letter-spacing:.08em;text-align:center;padding:6px}
+.ogp-ph .cap{padding:7px 8px 8px;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+.ogp-ph .cap b{display:block;color:var(--amber);letter-spacing:.1em;font-weight:600}
+.ogp-ph.mine{border-color:var(--amber-dim)}
+.ogp-ph.sel{outline:2px solid var(--amber);outline-offset:2px}
+.ogp-win{position:absolute;top:6px;left:6px;z-index:1;background:var(--amber);color:var(--bg);font:700 10px var(--mono);letter-spacing:.1em;padding:3px 6px}
+.ogp-more{display:block;margin:14px auto 0;min-height:44px}
+.ogp-sentinel{height:1px}
+.ogp-empty{border:1px dashed var(--line);padding:22px 14px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
+.ogp-lb{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:rgba(5,6,4,.97);color:var(--text);font-family:var(--mono)}
+.ogp-lb *{box-sizing:border-box}
+.ogp-lb button{font-family:inherit}
+.ogp-lb-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.ogp-lb-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.ogp-lb-stage img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.ogp-lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:64px;background:rgba(20,23,15,.78);color:var(--text);border:1px solid var(--line);font-size:22px;cursor:pointer;z-index:2}
+.ogp-lb-nav.p{left:6px}.ogp-lb-nav.n{right:6px}
+.ogp-lb-nav:disabled{opacity:.3;cursor:default}
+.ogp-lb-cap{padding:10px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:36vh;overflow:auto;border-top:1px solid var(--line);background:var(--panel)}
+.ogp-lb-cap h3{margin:0 0 4px;font:700 17px/1.25 var(--sans);letter-spacing:.06em}
+.ogp-lb-cap p{margin:4px 0 0;color:var(--muted);font:400 13px/1.5 var(--sans)}
+.ogp-seal-wrap{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;padding:20px 8px}
+.ogp-seal{position:relative;width:176px;height:176px;border-radius:50%;border:2px solid var(--amber);display:flex;align-items:center;justify-content:center}
+.ogp-seal::before{content:"";position:absolute;inset:14px;border-radius:50%;border:1px dashed var(--amber-dim);animation:ogpSpin 48s linear infinite}
+.ogp-seal::after{content:"";position:absolute;inset:-12px;border-radius:50%;box-shadow:0 0 42px rgba(232,147,58,.2);animation:ogpPulse 3.4s ease-in-out infinite}
+.ogp-seal svg{width:68px;height:68px;fill:none;stroke:var(--amber);stroke-width:1.5}
+.ogp-stamp{border:1px solid var(--denied);color:#e0715f;padding:4px 14px;font-size:12px;letter-spacing:.26em}
+.ogp-rev{max-width:720px;margin:0 auto;text-align:center;padding:6px 0 10px}
+.ogp-rev .st{opacity:0}
+.ogp-rev .ph{opacity:0;clip-path:inset(50% 50% 50% 50%);margin:18px auto;border:2px solid var(--amber);background:var(--panel);padding:6px;display:inline-block;max-width:100%}
+.ogp-rev .ph img{display:block;max-width:100%;max-height:62vh;height:auto;margin:0 auto}
+.ogp-rev .scan{height:2px;width:0;background:var(--amber);margin:0 auto 14px;box-shadow:0 0 12px var(--amber)}
+.ogp-rev .team{font:700 34px/1.1 var(--sans);letter-spacing:.12em;color:var(--amber);margin:6px 0}
+.ogp-rev .pts{display:inline-block;margin-top:10px;border:1px solid var(--granted);color:var(--granted);padding:4px 12px;font-size:13px;letter-spacing:.14em}
+.ogp-rev.go .scan{animation:ogpScan 1.6s .1s ease-out forwards}
+.ogp-rev.go .s1{animation:ogpFade .6s .2s forwards}
+.ogp-rev.go .ph{animation:ogpOpen 1.2s 2s cubic-bezier(.2,.8,.2,1) forwards}
+.ogp-rev.go .s2{animation:ogpFade .8s 1.2s forwards}
+.ogp-rev.go .s3{animation:ogpFade .8s 3.4s forwards}
+.ogp-rev.go .s4{animation:ogpFade .8s 4s forwards}
+.ogp-agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:start}
+.ogp-rev.static .st,.ogp-rev.static .ph{opacity:1;clip-path:none;animation:none}
+.ogp-rev.static .scan{width:100%;animation:none}
+.ogp-modal{position:fixed;inset:0;z-index:9500;background:rgba(5,6,4,.82);display:flex;align-items:center;justify-content:center;padding:16px;font-family:var(--mono);color:var(--text)}
+.ogp-modal *{box-sizing:border-box}
+.ogp-modal-box{width:100%;max-width:430px;background:var(--panel);border:1px solid var(--line);padding:18px}
+.ogp-modal-title{margin:0 0 10px;font:700 17px/1.25 var(--sans);letter-spacing:.1em}
+.ogp-modal-box p{margin:0 0 6px;font:400 14px/1.5 var(--sans);color:var(--text)}
+.ogp-modal .ogp-danger{background:var(--denied);border-color:var(--denied);color:#fff}
+.ogp-toast{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:9600;margin:0 auto;max-width:460px;padding:12px 14px;background:var(--raised);border:1px solid var(--line);color:var(--text);font-size:13px;line-height:1.4;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s}
+.ogp-toast.on{opacity:1;transform:none}
+.ogp-toast.ok{border-color:var(--granted)}
+.ogp-toast.no{border-color:var(--denied)}
+.ogp-set{display:grid;grid-template-columns:1fr;gap:4px}
+.ogp-set label{display:block;font-size:11px;letter-spacing:.12em;color:var(--muted);margin:12px 0 2px}
+.ogp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-bottom:12px}
+.ogp-stat{border:1px solid var(--line);background:var(--surface);padding:10px}
+.ogp-stat b{display:block;font:700 22px var(--sans);color:var(--amber)}
+.ogp-stat span{font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.ogp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.ogp-fil{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.ogp-acard{border:1px solid var(--line);background:var(--surface)}
+.ogp-acard.sel{outline:2px solid var(--amber);outline-offset:2px}
+.ogp-acard.win{border-color:var(--amber)}
+.ogp-acard>button.im{display:block;width:100%;padding:0;border:0;background:var(--raised);cursor:pointer}
+.ogp-acard img{display:block;width:100%;height:auto}
+.ogp-acard .meta{padding:8px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.ogp-acard .meta b{color:var(--amber);letter-spacing:.1em}
+.ogp-acard .acts{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px 8px}
+.ogp-acard label.ck{display:flex;align-items:center;gap:8px;padding:8px;min-height:44px;font-size:11px;letter-spacing:.1em;border-top:1px solid var(--line);cursor:pointer}
+.ogp-acard label.ck input{width:20px;height:20px;accent-color:var(--amber)}
+.ogp-cmp{position:fixed;inset:0;z-index:8800;overflow:auto;background:rgba(8,9,7,.98);padding:12px 12px calc(30px + env(safe-area-inset-bottom,0px));padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.ogp-cmp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px;margin-top:12px}
+.ogp-cmp-it{border:1px solid var(--line);background:var(--panel);padding:8px}
+.ogp-cmp-it img{display:block;width:100%;max-height:70vh;object-fit:contain;background:#000}
+.ogp-win-box{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:start}
+.ogp-win-box img{display:block;width:96px;aspect-ratio:1;object-fit:cover;background:var(--raised)}
+.ogp-ep{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.ogp-ep-line{font-size:11px;letter-spacing:.1em;color:var(--amber);margin-bottom:8px}
+@keyframes ogpSpin{to{transform:rotate(360deg)}}
+@keyframes ogpPulse{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes ogpScan{from{width:0}to{width:100%}}
+@keyframes ogpFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes ogpOpen{from{opacity:0;clip-path:inset(50% 50% 50% 50%)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@media (min-width:700px){.ogp-body{padding:20px 24px 40px}.ogp-h{font-size:26px}.ogp-fil{grid-template-columns:1fr 1fr 1fr}.ogp-set{grid-template-columns:1fr 1fr;gap:4px 16px}}
+@media (prefers-reduced-motion:reduce){.ogp-seal::before,.ogp-seal::after{animation:none}.ogp-rev.go .st,.ogp-rev.go .ph,.ogp-rev.go .scan{animation:none!important}}
+`;
+  function injectStyle() {
+    if (document.getElementById("ogp-style")) return;
+    var st = document.createElement("style");
+    st.id = "ogp-style";
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  // ======================================================================
+  //  Fenêtre du concours : en-tête, onglets, messages, confirmations
+  // ======================================================================
+  var toastTimer = null;
+  S.countdowns = [];
+
+  function ensureToast() {
+    if (S.toastEl) return;
+    S.toastEl = h("div", { class: "ogp-toast", role: "status", "aria-live": "polite" });
+    document.body.appendChild(S.toastEl);
+  }
+  function toast(msg, kind) {
+    ensureToast();
+    S.toastEl.textContent = msg;
+    S.toastEl.className = "ogp-toast on" + (kind ? " " + kind : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { S.toastEl.className = "ogp-toast"; }, 4500);
+  }
+
+  function confirmBox(o) {
+    return new Promise(function (resolve) {
+      var back = h("div", { class: "ogp-modal", role: "alertdialog", "aria-modal": "true", "aria-label": o.title });
+      var finish = function (v) {
+        if (back.parentNode) back.parentNode.removeChild(back);
+        S.modalOpen = false;
+        resolve(v);
+      };
+      var ok = h("button", { type: "button", class: "og-submit" + (o.danger ? " ogp-danger" : ""), text: o.ok || "CONFIRMER", onclick: function () { finish(true); } });
+      var no = h("button", { type: "button", class: "og-btn-small", text: "ANNULER", onclick: function () { finish(false); } });
+      var box = h("div", { class: "ogp-modal-box" }, [h("div", { class: "ogp-modal-title", text: o.title })]);
+      String(o.text || "").split("\n").forEach(function (line) { box.appendChild(h("p", { text: line })); });
+      box.appendChild(h("div", { class: "og-form-buttons" }, [ok, no]));
+      back.appendChild(box);
+      back.addEventListener("click", function (e) { if (e.target === back) finish(false); });
+      back.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); finish(false); } });
+      S.modalOpen = true;
+      document.body.appendChild(back);
+      ok.focus();
+    });
+  }
+
+  function makeCountdown(iso) {
+    var el = h("div", { class: "ogp-cd", text: "--:--:--" });
+    var rec = { el: el, t: Date.parse(iso), fired: false };
+    S.countdowns.push(rec);
+    updateCountdown(rec);
+    return el;
+  }
+  function updateCountdown(rec) {
+    var left = rec.t - nowMs();
+    rec.el.textContent = fmtCountdown(left);
+    if (left <= 0 && !rec.fired) { rec.fired = true; refreshState(); }
+  }
+  function startTick() {
+    if (S.tick) return;
+    S.tick = setInterval(function () {
+      S.countdowns = S.countdowns.filter(function (r) { return document.body.contains(r.el); });
+      S.countdowns.forEach(updateCountdown);
+    }, 1000);
+  }
+  function stopTick() { clearInterval(S.tick); S.tick = null; }
+
+  function buildOverlay() {
+    if (S.overlay) return;
+    injectStyle();
+    ensureToast();
+    S.titleEl = h("div", { class: "ogp-title" });
+    S.tabsEl = h("nav", { class: "ogp-tabs", role: "tablist", "aria-label": "Rubriques du concours photo" });
+    S.bodyEl = h("main", { class: "ogp-body" });
+    var closeBtn = h("button", { type: "button", class: "og-btn-small", text: "✕ FERMER", onclick: closeOverlay });
+    S.overlay = h("div", { class: "ogp", role: "dialog", "aria-modal": "true", "aria-label": "Concours photo", tabindex: "-1", hidden: true }, [
+      h("header", { class: "ogp-head" }, [S.titleEl, closeBtn]), S.tabsEl, S.bodyEl
+    ]);
+    S.overlay.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !S.lbOpen && !S.modalOpen && !S.cmpOpen) closeOverlay();
+    });
+    document.body.appendChild(S.overlay);
+  }
+
+  function renderHead() {
+    if (!S.titleEl) return;
+    var st = S.state || {};
+    clear(S.titleEl);
+    S.titleEl.appendChild(document.createTextNode("CONCOURS PHOTO"));
+    S.titleEl.appendChild(h("small", { text: isAdmin() ? "ADMINISTRATION" : (st.team_name ? "ÉQUIPE " + String(st.team_name).toUpperCase() : "") }));
+  }
+  function tabsFor() {
+    return isAdmin()
+      ? [["manage", "GESTION"], ["gallery", "GALERIE"], ["verdict", "VERDICT"]]
+      : [["send", "ENVOYER"], ["gallery", "GALERIE"], ["verdict", "VERDICT"]];
+  }
+  function renderTabs() {
+    clear(S.tabsEl);
+    tabsFor().forEach(function (t) {
+      S.tabsEl.appendChild(h("button", {
+        type: "button", role: "tab", class: "ogp-tab", "aria-selected": S.tab === t[0] ? "true" : "false", text: t[1],
+        onclick: function () { setTab(t[0]); }
+      }));
+    });
+  }
+  function setTab(id) { S.tab = id; renderTabs(); renderBody(); }
+  function renderBody() {
+    if (S.io) { try { S.io.disconnect(); } catch (e) {} S.io = null; }
+    clear(S.bodyEl);
+    S.bodyEl.scrollTop = 0;
+    S.countdowns = [];
+    if (S.tab === "send") renderSend();
+    else if (S.tab === "gallery") renderGallery();
+    else if (S.tab === "verdict") renderVerdict();
+    else if (S.tab === "manage") renderManage();
+  }
+
+  var prevOverflow = "";
+  function openOverlay(tab) {
+    if (!cfg) return;
+    buildOverlay();
+    var had = !!S.state;
+    S.isOpen = true;
+    S.overlay.hidden = false;
+    S.overlay.removeAttribute("hidden");
+    prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    renderHead();
+    setTab(tab || (isAdmin() ? "manage" : "send"));
+    startTick();
+    try { S.overlay.focus(); } catch (e) {}
+    refreshState().then(function () {
+      if (!S.isOpen) return;
+      if (!had) { renderHead(); renderBody(); }
+    });
+    schedule();
+  }
+  function closeOverlay() {
+    if (!S.overlay) return;
+    closeLightbox();
+    closeCompare();
+    S.isOpen = false;
+    S.overlay.hidden = true;
+    S.overlay.setAttribute("hidden", "");
+    document.body.style.overflow = prevOverflow;
+    stopTick();
+    renderAdminBox();
+    if (cfg && typeof cfg.onChange === "function") { try { cfg.onChange(); } catch (e) {} }
+    schedule();
+  }
+
+  // ======================================================================
+  //  Intégration au site : bouton dans la liste des épreuves + rubrique admin
+  // ======================================================================
+  function statusLine(st) {
+    if (st.revealed) return "VERDICT RÉVÉLÉ";
+    if (st.open) return "ENVOIS OUVERTS" + (st.closes_at ? " · CLÔTURE LE " + fmtDateTime(st.closes_at).toUpperCase() : "");
+    return "ENVOIS FERMÉS";
+  }
+  function decorate(item, ep) {
+    var st = S.state;
+    if (!cfg || !st || st.available === false || !st.epreuve_id || String(st.epreuve_id) !== String(ep.id)) return;
+    var admin = isAdmin();
+    var row = h("div", { class: "og-item-controls" });
+    row.appendChild(h("button", {
+      type: "button", class: "og-btn-small",
+      text: admin ? "OUVRIR LE CONCOURS" : (st.revealed ? "VOIR LE VERDICT" : "PARTICIPER AU CONCOURS PHOTO"),
+      onclick: function () { openOverlay(admin ? "gallery" : (st.revealed ? "verdict" : "send")); }
+    }));
+    if (admin) row.appendChild(h("button", { type: "button", class: "og-btn-small", text: "GÉRER", onclick: function () { openOverlay("manage"); } }));
+    item.appendChild(h("div", { class: "ogp-ep" }, [h("div", { class: "ogp-ep-line", text: statusLine(st) }), row]));
+  }
+
+  function renderAdminBox() {
+    var box = document.getElementById("og-photo-admin-box");
+    if (!box || !cfg || !isAdmin()) return;
+    clear(box);
+    var st = S.state;
+    if (!st) {
+      box.appendChild(h("div", { class: "og-empty", text: S.stateError
+        ? "Concours photo indisponible : " + S.stateError + " (la migration SQL est-elle appliquée ?)"
+        : "Chargement du concours photo…" }));
+      return;
+    }
+    var verdictTag = st.revealed ? ["VERDICT RÉVÉLÉ", "ok"] : (st.winner_photo_id ? ["GAGNANT DÉSIGNÉ · SCELLÉ", "am"] : ["AUCUN GAGNANT DÉSIGNÉ", ""]);
+    box.appendChild(h("div", { class: "ogp-row", style: "margin-bottom:10px" }, [
+      h("span", { class: "ogp-tag " + (st.open ? "ok" : "no"), text: st.open ? "ENVOIS OUVERTS" : "ENVOIS FERMÉS" }),
+      h("span", { class: "ogp-tag " + (st.gallery_visible ? "ok" : ""), text: st.gallery_visible ? "GALERIE VISIBLE" : "GALERIE MASQUÉE" }),
+      h("span", { class: "ogp-tag " + verdictTag[1], text: verdictTag[0] })
+    ]));
+    box.appendChild(h("div", { class: "og-item-desc", style: "margin:0 0 10px", text:
+      (st.total || 0) + " photo" + ((st.total || 0) > 1 ? "s" : "") + " reçue" + ((st.total || 0) > 1 ? "s" : "") +
+      (st.pending ? " · " + st.pending + " envoi" + (st.pending > 1 ? "s" : "") + " incomplet" + (st.pending > 1 ? "s" : "") : "") }));
+    box.appendChild(h("button", { type: "button", class: "og-btn-small", text: "OUVRIR LA GESTION DU CONCOURS", onclick: function () { openOverlay("manage"); } }));
+  }
+
+  // ======================================================================
+  //  Moteur d'envoi : empreinte, aperçus, envoi par morceaux (TUS), reprise
+  // ======================================================================
+  function guessType(file) {
+    var t = String(file.type || "").toLowerCase();
+    if (t === "image/jpg" || t === "image/pjpeg") t = "image/jpeg";
+    if (ALLOWED[t]) return t;
+    var m = /\.([a-z0-9]+)$/i.exec(file.name || "");
+    var e = m && m[1].toLowerCase();
+    return (e && EXT_TYPE[e]) || t || "";
+  }
+  function readBuf(blob) {
+    if (blob.arrayBuffer) return blob.arrayBuffer();
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+      r.readAsArrayBuffer(blob);
+    });
+  }
+  function hex(buf) {
+    var a = new Uint8Array(buf), s = "";
+    for (var i = 0; i < a.length; i++) s += (a[i] < 16 ? "0" : "") + a[i].toString(16);
+    return s;
+  }
+  function fallbackHash(file) {
+    var str = (file.name || "") + "|" + file.size + "|" + (file.lastModified || 0), out = "", a = 0x811c9dc5;
+    for (var r = 0; r < 8; r++) {
+      for (var i = 0; i < str.length; i++) { a ^= str.charCodeAt(i) + r; a = Math.imul(a, 16777619) >>> 0; }
+      out += ("00000000" + a.toString(16)).slice(-8);
+    }
+    return "s:" + out;
+  }
+  // Empreinte du fichier (anti-doublon). Très gros fichier : empreinte d'échantillons (taille + début + milieu + fin).
+  function fileHash(file) {
+    var subtle = global.crypto && global.crypto.subtle;
+    if (!subtle) return Promise.resolve(fallbackHash(file));
+    var FULL = 64 * 1024 * 1024, Q = 4 * 1024 * 1024;
+    var p;
+    if (file.size <= FULL) {
+      p = readBuf(file).then(function (b) { return subtle.digest("SHA-256", b); }).then(hex);
+    } else {
+      var mid = Math.max(0, Math.floor(file.size / 2) - Q / 2);
+      p = Promise.all([file.slice(0, Q), file.slice(mid, mid + Q), file.slice(file.size - Q)].map(readBuf)).then(function (bs) {
+        var head = new TextEncoder().encode("size:" + file.size + ";");
+        var all = new Uint8Array(head.length + bs[0].byteLength + bs[1].byteLength + bs[2].byteLength), o = head.length;
+        all.set(head, 0);
+        bs.forEach(function (b) { all.set(new Uint8Array(b), o); o += b.byteLength; });
+        return subtle.digest("SHA-256", all.buffer);
+      }).then(function (d) { return "s:" + hex(d); });
+    }
+    return p.catch(function () { return fallbackHash(file); });
+  }
+
+  // Aperçus (miniature + version d'affichage) : l'ORIGINAL n'est jamais modifié.
+  function loadImage(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () { resolve({ img: img, url: url }); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("decode")); };
+      img.src = url;
+    });
+  }
+  function scaleTo(img, longEdge, quality) {
+    var w = img.naturalWidth, hh = img.naturalHeight, k = Math.min(1, longEdge / Math.max(w, hh));
+    var cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(hh * k));
+    var c = document.createElement("canvas");
+    c.width = cw; c.height = ch;
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cw, ch);
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, cw, ch);
+    return new Promise(function (res) { c.toBlob(function (b) { res(b); }, "image/jpeg", quality); });
+  }
+  function processImage(file) {
+    return loadImage(file).then(function (o) {
+      var w = o.img.naturalWidth, hh = o.img.naturalHeight;
+      return scaleTo(o.img, 720, 0.8).then(function (thumb) {
+        return scaleTo(o.img, 2048, 0.86).then(function (display) {
+          URL.revokeObjectURL(o.url);
+          return { thumb: thumb || null, display: display || null, width: w, height: hh };
+        });
+      });
+    });
+  }
+
+  // ----------------------------------------------------------------------
+  //  Protocole TUS (reprise d'envoi) avec jeton signé — morceaux de 6 Mo
+  // ----------------------------------------------------------------------
+  function b64(s) { return btoa(unescape(encodeURIComponent(s))); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function mkErr(kind, msg, fatalFlag) { var e = new Error(msg || kind); e.kind = kind; if (fatalFlag) e.fatal = true; return e; }
+  function waitOnline(ms) {
+    return sleep(ms).then(function () {
+      if (typeof navigator === "undefined" || navigator.onLine !== false) return;
+      return new Promise(function (resolve) {
+        var t = setTimeout(done, 120000);
+        function done() { global.removeEventListener("online", done); clearTimeout(t); resolve(); }
+        global.addEventListener("online", done);
+      });
+    });
+  }
+  function xhrReq(method, url, headers, body, onProg, hold) {
+    return new Promise(function (resolve, reject) {
+      var x = new XMLHttpRequest();
+      x.open(method, url, true);
+      for (var k in headers) if (Object.prototype.hasOwnProperty.call(headers, k)) x.setRequestHeader(k, headers[k]);
+      if (onProg && x.upload) x.upload.onprogress = function (e) { if (e.lengthComputable) onProg(e.loaded); };
+      x.onload = function () { resolve({ status: x.status, header: function (n) { return x.getResponseHeader(n); }, text: x.responseText || "" }); };
+      x.onerror = function () { reject(mkErr("net", "Réseau indisponible")); };
+      x.ontimeout = function () { reject(mkErr("net", "Délai dépassé")); };
+      x.onabort = function () { reject(mkErr("abort", "Interrompu")); };
+      if (hold) hold.abort = function () { x.abort(); };
+      x.send(body === undefined ? null : body);
+    });
+  }
+  function httpError(r) {
+    var msg = "";
+    try { var j = JSON.parse(r.text); msg = j.message || j.error || ""; } catch (e) {}
+    var s = r.status, e = new Error(msg || ("HTTP " + s));
+    e.status = s;
+    if (s === 413) { e.kind = "too_large"; e.fatal = true; e.message = "Fichier trop volumineux pour la limite actuelle du serveur."; }
+    else if (s === 401 || s === 403) { e.kind = "auth"; e.fatal = true; }
+    else if (s === 404 || s === 410) { e.kind = "gone"; }
+    else if (s === 409 || s === 423 || s === 460) { e.kind = "conflict"; }
+    else if (s === 408 || s === 429 || s >= 500) { e.kind = "server"; }
+    else { e.kind = "rejected"; e.fatal = true; e.message = msg || "Fichier refusé par le serveur."; }
+    return e;
+  }
+
+  // o : { endpoint, token, blob, bucket, path, type, cache, key, onBytes(n), onWait(n), ctl, isCancelled() }
+  async function tusUpload(o) {
+    var size = o.blob.size, url = null, offset = 0, retries = 0;
+    function hdrs(extra) {
+      var x = { "Tus-Resumable": "1.0.0", apikey: cfg.key, "x-signature": o.token }, k;
+      for (k in extra) x[k] = extra[k];
+      return x;
+    }
+    function loadSaved() { try { return JSON.parse(localStorage.getItem(o.key) || "null"); } catch (e) { return null; } }
+    function saveUrl(u) { try { localStorage.setItem(o.key, JSON.stringify({ url: u, size: size, ts: Date.now() })); } catch (e) {} }
+    function forget() { try { localStorage.removeItem(o.key); } catch (e) {} }
+    function check() { if (o.isCancelled && o.isCancelled()) throw mkErr("abort", "Interrompu"); }
+
+    async function headOffset(u) {
+      var r = await xhrReq("HEAD", u, hdrs({}), undefined, null, o.ctl);
+      var off = parseInt(r.header("Upload-Offset"), 10), len = parseInt(r.header("Upload-Length"), 10);
+      if ((r.status === 200 || r.status === 204) && isFinite(off) && (!isFinite(len) || len === size)) return off;
+      if (r.status === 200 || r.status === 204 || r.status === 404 || r.status === 410) return -1;
+      throw httpError(r);
+    }
+    async function create() {
+      var meta = ["bucketName " + b64(o.bucket), "objectName " + b64(o.path), "contentType " + b64(o.type), "cacheControl " + b64(o.cache || "3600")].join(",");
+      var r = await xhrReq("POST", o.endpoint, hdrs({ "Upload-Length": String(size), "Upload-Metadata": meta }), undefined, null, o.ctl);
+      if (r.status !== 201) throw httpError(r);
+      var loc = r.header("Location");
+      if (!loc) throw mkErr("rejected", "Réponse du serveur incomplète", true);
+      try { url = new URL(loc, o.endpoint).toString(); } catch (e) { url = loc; }
+      offset = 0;
+      saveUrl(url);
+    }
+    async function begin() {
+      if (!url) { var s = loadSaved(); if (s && s.url && s.size === size) url = s.url; }
+      if (url) {
+        var off = await headOffset(url);
+        if (off >= 0) { offset = off; return; }
+        forget(); url = null;
+      }
+      await create();
+    }
+    async function loop() {
+      while (offset < size) {
+        check();
+        var from = offset, end = Math.min(offset + CHUNK, size);
+        var r = await xhrReq("PATCH", url, hdrs({ "Content-Type": "application/offset+octet-stream", "Upload-Offset": String(from) }),
+          o.blob.slice(from, end), function (l) { o.onBytes(from + l); }, o.ctl);
+        if (r.status !== 204 && r.status !== 200) throw httpError(r);
+        var n = parseInt(r.header("Upload-Offset"), 10);
+        offset = isFinite(n) ? n : end;
+        retries = 0;
+        o.onBytes(offset);
+      }
+    }
+
+    for (;;) {
+      try {
+        check();
+        await begin();
+        o.onBytes(offset);
+        await loop();
+        forget();
+        return;
+      } catch (e) {
+        if (e.kind === "abort" || e.fatal) throw e;
+        if (e.kind === "gone") {
+          forget(); url = null; offset = 0;
+          if (++retries > 3) throw mkErr("gone", "L’envoi a expiré, relance-le.", true);
+          continue;
+        }
+        if (++retries > 8) throw e;
+        if (o.onWait) o.onWait(retries);
+        await waitOnline(Math.min(15000, 800 * Math.pow(2, retries - 1)));
+      }
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  //  Envoi d'une photo : empreinte → autorisation → fichiers → validation
+  // ----------------------------------------------------------------------
+  function refreshItem(item) { if (item.ui && typeof item.ui.refresh === "function") item.ui.refresh(); }
+  function setPhase(item, text) { item.phase = text; refreshItem(item); }
+  function userErr(code, msg) { var e = new Error(msg); e.kind = "user"; e.code = code; return e; }
+  function checkCancel(item) { if (item.cancelled) throw mkErr("abort", "Interrompu"); }
+
+  async function initPlan(item) {
+    var d = item.derived || {};
+    var r = await fn("init", { files: [{
+      client_id: item.id, name: item.name, type: item.type, size: item.size, sha256: item.hash,
+      title: item.title, description: item.desc, width: d.width || null, height: d.height || null
+    }] });
+    if (!r.results) throw userErr(r.code || "init", r.error || "Envoi refusé");
+    var res = r.results[0];
+    if (!res || !res.ok) throw userErr((res && res.code) || "init", (res && res.error) || "Envoi refusé");
+    return { res: res, tus: r.tus };
+  }
+
+  async function uploadAll(item, plan) {
+    var res = plan.res, tus = plan.tus, d = item.derived || {};
+    item.photoId = res.photo_id;
+    var list = [{ kind: "original", t: res.original, blob: item.file, type: res.mime_type || item.type, cache: "3600", optional: false }];
+    if (d.thumb && res.thumb) list.push({ kind: "thumb", t: res.thumb, blob: d.thumb, type: "image/jpeg", cache: "31536000", optional: true });
+    if (d.display && res.display) list.push({ kind: "display", t: res.display, blob: d.display, type: "image/jpeg", cache: "31536000", optional: true });
+    var todo = list.filter(function (x) { return x.t && !x.t.uploaded; });
+    item.total = todo.reduce(function (s, x) { return s + x.blob.size; }, 0);
+    var done = 0;
+    item.sent = 0; item.pct = 0;
+    for (var i = 0; i < todo.length; i++) {
+      var x = todo[i];
+      checkCancel(item);
+      try {
+        await tusUpload({
+          endpoint: tus.endpoint, token: x.t.token, blob: x.blob, bucket: x.t.bucket, path: x.t.path, type: x.type, cache: x.cache,
+          key: "ogp:tus:" + res.photo_id + ":" + x.kind, ctl: item.ctl,
+          isCancelled: function () { return item.cancelled; },
+          onBytes: function (b) {
+            item.sent = Math.min(item.total, done + b);
+            item.pct = item.total ? Math.floor(item.sent * 100 / item.total) : 0;
+            item.phase = "";
+            refreshItem(item);
+          },
+          onWait: function () { item.phase = "Connexion instable… reprise automatique"; refreshItem(item); }
+        });
+      } catch (e) {
+        if (x.optional && e.kind !== "abort" && e.kind !== "auth") continue;  // aperçu manquant : sans gravité
+        throw e;
+      }
+      done += x.blob.size;
+    }
+  }
+
+  async function runItem(item) {
+    item.cancelled = false;
+    item.state = "working"; item.msg = ""; item.phase = "Préparation…"; item.pct = 0;
+    refreshItem(item);
+    try {
+      if (!item.hash) { setPhase(item, "Calcul de l’empreinte…"); item.hash = await fileHash(item.file); }
+      if (item.derived === undefined) {
+        setPhase(item, "Préparation des aperçus…");
+        try { item.derived = await (cfg.processImage || processImage)(item.file); } catch (e) { item.derived = null; }
+      }
+      checkCancel(item);
+      setPhase(item, "Autorisation d’envoi…");
+      var plan = await initPlan(item);
+      try {
+        await uploadAll(item, plan);
+      } catch (e) {
+        if (e.kind !== "auth") throw e;
+        plan = await initPlan(item);              // autorisation expirée : on en demande une nouvelle
+        await uploadAll(item, plan);
+      }
+      checkCancel(item);
+      setPhase(item, "Vérification par le serveur…");
+      var fin = await fn("finalize", { photo_id: item.photoId });
+      if (!fin.ok) {
+        if (fin.code === "missing") throw userErr("missing", "L’envoi n’est pas arrivé en entier. Relance-le : il reprend là où il s’est arrêté.");
+        throw userErr(fin.code || "finalize", fin.error || "Le fichier n’a pas été accepté.");
+      }
+      item.state = "done"; item.pct = 100; item.phase = "";
+      refreshItem(item);
+      toast("Photo envoyée.", "ok");
+      refreshState();
+      loadMine();
+      setTimeout(function () { removeFromQueue(item); }, 3500);
+    } catch (e) {
+      item.phase = "";
+      if (e.kind === "abort") {
+        item.state = "ready"; item.msg = "Interrompu. Si tu relances, l’envoi reprend là où il s’est arrêté.";
+        item.interrupted = true;
+      } else if (e.kind === "user" && e.code === "duplicate") {
+        item.state = "dup"; item.msg = "Cette photo a déjà été envoyée.";
+      } else if (e.kind === "user") {
+        item.state = "error"; item.msg = e.message;
+        if (e.code === "closed" || e.code === "no_team" || e.code === "auth") item.fatalCode = e.code;
+      } else if (e.kind === "net") {
+        item.state = "error"; item.msg = "Réseau indisponible. Réessaie : l’envoi reprendra automatiquement.";
+      } else {
+        item.state = "error"; item.msg = e.message || "Échec de l’envoi.";
+      }
+      refreshItem(item);
+    }
+  }
+
+  function startItems(items) {
+    items.forEach(function (it) { if (it.state === "ready" || it.state === "error") { it.state = "queued"; it.msg = ""; refreshItem(it); } });
+    pump();
+  }
+  function pump() {
+    if (S.running) return;
+    var next = null;
+    for (var i = 0; i < S.queue.length; i++) if (S.queue[i].state === "queued") { next = S.queue[i]; break; }
+    if (!next) return;
+    S.running = true;
+    runItem(next).then(null, function () {}).then(function () { S.running = false; pump(); });
+  }
+  function cancelItem(item) {
+    item.cancelled = true;
+    if (item.state === "queued") { item.state = "ready"; refreshItem(item); return; }
+    if (item.ctl && typeof item.ctl.abort === "function") { try { item.ctl.abort(); } catch (e) {} }
+  }
+  function removeFromQueue(item) {
+    var i = S.queue.indexOf(item);
+    if (i >= 0) S.queue.splice(i, 1);
+    try { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); } catch (e) {}
+    if (S.isOpen && S.tab === "send") renderQueue();
+  }
+
+  // ======================================================================
+  //  Onglet ENVOYER (participants)
+  // ======================================================================
+  function emptyBox(text) { return h("div", { class: "ogp-empty", text: text }); }
+
+  function renderSend() {
+    var wrap = h("div", { class: "ogp-wrap" });
+    wrap.appendChild(h("p", { class: "ogp-lab", text: "ÉPREUVE SPÉCIALE — CONCOURS PHOTO" }));
+    wrap.appendChild(h("h2", { class: "ogp-h", text: "LE GRAND CONCOURS PHOTO" }));
+    wrap.appendChild(h("p", { class: "ogp-quote", text: "« Une image vaut mille mots. À vous de capturer celle qui marquera cette journée. »" }));
+    S.sendTop = h("div"); S.queueEl = h("div"); S.mineEl = h("div");
+    wrap.appendChild(S.sendTop); wrap.appendChild(S.queueEl); wrap.appendChild(S.mineEl);
+    S.bodyEl.appendChild(wrap);
+    renderSendTop(); renderQueue(); renderMineBox(); loadMine();
+  }
+
+  function renderSendTop() {
+    if (!S.sendTop || S.tab !== "send") return;
+    var st = S.state;
+    clear(S.sendTop);
+    if (!st) { S.sendTop.appendChild(emptyBox("Chargement…")); return; }
+    var open = !!st.open;
+    var left = h("div", {}, [h("div", { class: "ogp-lab m", text: "CLÔTURE DES ENVOIS" })]);
+    if (open && st.closes_at) left.appendChild(makeCountdown(st.closes_at));
+    else left.appendChild(h("div", { class: "ogp-muted", text: open ? "Aucune heure de clôture annoncée pour l’instant." : (st.closes_at ? "Clôturés le " + fmtDateTime(st.closes_at) + "." : "Les envois ne sont pas ouverts.") }));
+    S.sendTop.appendChild(h("div", { class: "ogp-box" }, [h("div", { class: "ogp-row ogp-sp" }, [left, h("span", { class: "ogp-tag " + (open ? "ok" : "no"), text: open ? "OUVERT" : "FERMÉ" })])]));
+    if (!open) {
+      S.sendTop.appendChild(h("p", { class: "ogp-p", text: "Les participations sont closes. Tu retrouves ci-dessous les photos de ton équipe." }));
+      return;
+    }
+    S.sendTop.appendChild(h("p", { class: "ogp-p", text: "Humour, originalité, mise en scène, spontanéité ou photo particulièrement réussie : prends-la sur le vif ou choisis-la dans ta galerie. Elle est envoyée en pleine résolution, sans compression. Garde cette page ouverte pendant l’envoi : en cas de coupure, il reprend tout seul." }));
+    var cam = h("input", { type: "file", accept: "image/*", capture: "environment", hidden: true, tabindex: "-1", "aria-hidden": "true" });
+    var pick = h("input", { type: "file", accept: "image/*", multiple: true, hidden: true, tabindex: "-1", "aria-hidden": "true" });
+    cam.addEventListener("change", function () { addFiles(cam.files); cam.value = ""; });
+    pick.addEventListener("change", function () { addFiles(pick.files); pick.value = ""; });
+    S.sendTop.appendChild(h("div", { class: "ogp-pick" }, [
+      h("button", { type: "button", class: "og-btn-small ogp-pri", text: "PRENDRE UNE PHOTO", onclick: function () { cam.click(); } }),
+      h("button", { type: "button", class: "og-btn-small", text: "CHOISIR DES PHOTOS", onclick: function () { pick.click(); } }),
+      cam, pick
+    ]));
+  }
+
+  function newItem(file, type) {
+    return {
+      id: uid(), file: file, type: type, name: file.name || "photo", size: file.size,
+      title: "", desc: "", state: "ready", msg: "", phase: "", pct: 0, sent: 0, total: 0,
+      previewUrl: URL.createObjectURL(file), ctl: {}, cancelled: false, ui: null
+    };
+  }
+  function addFiles(list) {
+    var skipped = 0;
+    Array.prototype.forEach.call(list || [], function (f) {
+      var type = guessType(f);
+      if (!ALLOWED[type] || !f.size) { skipped++; return; }
+      var dupe = S.queue.some(function (q) { return q.name === f.name && q.size === f.size && q.file.lastModified === f.lastModified && q.state !== "done"; });
+      if (!dupe) S.queue.push(newItem(f, type));
+    });
+    if (skipped) toast(skipped + " fichier" + (skipped > 1 ? "s" : "") + " ignoré" + (skipped > 1 ? "s" : "") + " (formats pris en charge : JPEG, PNG, WebP, HEIC, AVIF).", "no");
+    renderQueue();
+  }
+
+  function itemStatus(item) {
+    switch (item.state) {
+      case "ready": return item.msg || (fmtBytes(item.size) + " · prête à envoyer");
+      case "queued": return "En attente…";
+      case "working": return item.phase || ("Envoi " + item.pct + " % · " + fmtBytes(item.sent) + " / " + fmtBytes(item.total) + " · reprise automatique si coupure");
+      case "done": return "Envoyée ✓";
+      default: return item.msg || "";
+    }
+  }
+  function buildQueueItem(item) {
+    var img = h("img", { class: "ogp-q-img", alt: "Aperçu de " + item.name, src: item.previewUrl });
+    var ph = h("div", { class: "ogp-q-ph", text: "APERÇU INDISPONIBLE", hidden: true });
+    img.addEventListener("error", function () { img.hidden = true; ph.hidden = false; ph.removeAttribute("hidden"); img.setAttribute("hidden", ""); });
+    var title = h("input", { type: "text", maxlength: "120", placeholder: "Titre (facultatif)", "aria-label": "Titre de la photo " + item.name });
+    title.value = item.title;
+    title.addEventListener("input", function () { item.title = title.value; });
+    var desc = h("textarea", { maxlength: "1000", placeholder: "Petite description (facultatif)", "aria-label": "Description de la photo " + item.name });
+    desc.value = item.desc;
+    desc.addEventListener("input", function () { item.desc = desc.value; });
+    var status = h("div", { class: "ogp-st", "aria-live": "polite" });
+    var fill = h("i");
+    var bar = h("div", { class: "ogp-bar" }, [fill]);
+    var bSend = h("button", { type: "button", class: "og-btn-small ogp-pri", text: "ENVOYER", onclick: function () { startItems([item]); } });
+    var bCancel = h("button", { type: "button", class: "og-btn-small", text: "INTERROMPRE", onclick: function () { cancelItem(item); } });
+    var bRetry = h("button", { type: "button", class: "og-btn-small ogp-pri", text: "RÉESSAYER", onclick: function () { startItems([item]); } });
+    var bRemove = h("button", { type: "button", class: "og-btn-small", text: "RETIRER", onclick: function () { removeFromQueue(item); } });
+    var root = h("div", { class: "ogp-q" }, [
+      h("div", {}, [img, ph]),
+      h("div", {}, [
+        h("div", { class: "ogp-q-name" }, [item.name + " ", h("small", { text: "· " + fmtBytes(item.size) })]),
+        title, desc, bar, status,
+        h("div", { class: "ogp-q-act" }, [bSend, bCancel, bRetry, bRemove])
+      ])
+    ]);
+    function setHidden(el, v) { if (v) el.setAttribute("hidden", ""); else el.removeAttribute("hidden"); }
+    item.ui = {
+      root: root,
+      refresh: function () {
+        var working = item.state === "working" || item.state === "queued";
+        var open = !!(S.state && S.state.open);
+        title.disabled = desc.disabled = working || item.state === "done" || item.state === "dup";
+        setHidden(bSend, !(item.state === "ready"));
+        bSend.disabled = !open;
+        setHidden(bCancel, !working);
+        setHidden(bRetry, !(item.state === "error"));
+        bRetry.disabled = !open || item.fatalCode === "closed" || item.fatalCode === "no_team";
+        setHidden(bRemove, working);
+        setHidden(bar, !(working || item.state === "done" || (item.state === "error" && item.pct > 0)));
+        fill.style.width = (item.state === "done" ? 100 : item.pct) + "%";
+        bar.className = "ogp-bar" + (item.state === "done" ? " ok" : (item.state === "error" ? " no" : ""));
+        status.className = "ogp-st" + ((item.state === "error" || item.state === "dup") ? " no" : (item.state === "done" ? " ok" : ""));
+        status.textContent = itemStatus(item);
+      }
+    };
+    item.ui.refresh();
+    return root;
+  }
+  function renderQueue() {
+    if (!S.queueEl) return;
+    clear(S.queueEl);
+    if (!S.queue.length) return;
+    var ready = S.queue.filter(function (q) { return q.state === "ready"; });
+    var open = !!(S.state && S.state.open);
+    var head = h("div", { class: "ogp-row ogp-sp", style: "margin:6px 0 8px" }, [h("div", { class: "ogp-lab m", style: "margin:0", text: "PHOTOS À ENVOYER (" + S.queue.length + ")" })]);
+    if (ready.length > 1) head.appendChild(h("button", { type: "button", class: "og-btn-small ogp-pri", text: "TOUT ENVOYER (" + ready.length + ")", disabled: !open, onclick: function () { startItems(ready); } }));
+    S.queueEl.appendChild(head);
+    S.queue.forEach(function (item) { S.queueEl.appendChild(buildQueueItem(item)); });
+  }
+
+  // ---- Photos déjà envoyées par l'équipe
+  function loadMine(more) {
+    if (S.mine.loading) return Promise.resolve();
+    S.mine.loading = true;
+    var f = { mine: true, limit: 48 };
+    if (more && S.mine.next) { f.before_ts = S.mine.next.before_ts; f.before_id = S.mine.next.before_id; }
+    return rpc("gallery", f).then(function (d) {
+      S.mine.loading = false;
+      if (d.error || !d.photos) return;
+      S.mine.items = more ? S.mine.items.concat(d.photos) : d.photos;
+      S.mine.more = !!d.more; S.mine.next = d.next || null; S.mine.loaded = true;
+      if (S.isOpen && S.tab === "send") renderMineBox();
+    }, function () { S.mine.loading = false; });
+  }
+  function deletePhoto(p, after) {
+    return confirmBox({ title: "Supprimer cette photo ?", text: "Elle sera retirée du concours, fichiers compris.", ok: "SUPPRIMER", danger: true }).then(function (yes) {
+      if (!yes) return;
+      return fn("delete", { photo_id: p.id }).then(function (r) {
+        if (r.ok) { toast("Photo supprimée.", "ok"); if (after) after(); refreshState(); }
+        else toast(r.error || "Suppression impossible.", "no");
+      }, function () { toast(offlineMsg(), "no"); });
+    });
+  }
+  function renderMineBox() {
+    if (!S.mineEl) return;
+    clear(S.mineEl);
+    var st = S.state || {};
+    var n = S.mine.loaded ? (S.mine.items.length + (S.mine.more ? "+" : "")) : (st.my_count || 0);
+    S.mineEl.appendChild(h("div", { class: "ogp-lab m", style: "margin:18px 0 8px", text: "MES PHOTOS · " + (st.team_name ? "ÉQUIPE " + String(st.team_name).toUpperCase() : "MON ÉQUIPE") + " (" + n + ")" }));
+    if (!S.mine.loaded) { S.mineEl.appendChild(emptyBox("Chargement…")); return; }
+    if (!S.mine.items.length) { S.mineEl.appendChild(emptyBox("Aucune photo envoyée par ton équipe pour l’instant.")); return; }
+    var grid = h("div", { class: "ogp-grid" });
+    S.mine.items.forEach(function (p, idx) {
+      var cell = h("div", { class: "ogp-mini" });
+      var im = p.thumb_path ? h("img", { src: publicUrl(p.thumb_path), alt: p.title || "Photo de mon équipe", loading: "lazy", decoding: "async" }) : h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+      cell.appendChild(h("button", {
+        type: "button", style: "display:block;width:100%;padding:0;border:0;background:none;cursor:pointer",
+        "aria-label": "Agrandir " + (p.title || "la photo"), onclick: function () { openLightbox(S.mine.items, idx, {}); }
+      }, [im]));
+      if (st.open) cell.appendChild(h("button", {
+        type: "button", class: "x", "aria-label": "Supprimer cette photo", text: "✕",
+        onclick: function () { deletePhoto(p, function () { S.mine.items = S.mine.items.filter(function (q) { return q.id !== p.id; }); renderMineBox(); }); }
+      }));
+      cell.appendChild(h("div", { class: "c", text: p.title || p.author || "" }));
+      grid.appendChild(cell);
+    });
+    S.mineEl.appendChild(grid);
+    if (S.mine.more) S.mineEl.appendChild(h("button", { type: "button", class: "og-btn-small ogp-more", text: "AFFICHER PLUS", onclick: function () { loadMine(true); } }));
+    if (st.open) S.mineEl.appendChild(h("p", { class: "ogp-muted", style: "margin-top:10px", text: "Tu peux supprimer une photo jusqu’à la clôture des participations." }));
+  }
+
+  // ======================================================================
+  //  Galerie : grille sans déformation, chargement progressif, visionneuse
+  // ======================================================================
+  function colCount() {
+    var w = (S.galHost && S.galHost.clientWidth) || global.innerWidth || 360;
+    return w < 520 ? 2 : (w < 900 ? 3 : 4);
+  }
+  function photoCard(p, onOpen) {
+    var im;
+    if (p.thumb_path) {
+      var a = { src: publicUrl(p.thumb_path), alt: p.title || "Photo du concours", loading: "lazy", decoding: "async" };
+      if (p.width && p.height) { a.width = p.width; a.height = p.height; }
+      im = h("img", a);
+    } else {
+      im = h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+    }
+    var cap = h("div", { class: "cap" }, [h("b", { text: teamLabel(p) })]);
+    if (p.title) cap.appendChild(document.createTextNode(p.title));
+    var kids = [im, cap];
+    if (p.is_winner) kids.unshift(h("span", { class: "ogp-win", text: "★ GAGNANTE" }));
+    return h("button", { type: "button", class: "ogp-ph" + (p.mine ? " mine" : ""), "aria-label": "Agrandir : " + (p.title || teamLabel(p)), onclick: onOpen }, kids);
+  }
+  function buildColumns() {
+    var n = colCount();
+    clear(S.galHost);
+    S.gal.cols = [];
+    for (var i = 0; i < n; i++) {
+      var c = h("div", { class: "ogp-col" });
+      S.galHost.appendChild(c);
+      S.gal.cols.push({ el: c, h: 0 });
+    }
+    S.gal.n = n;
+  }
+  function placeCard(p, idx) {
+    var ratio = (p.width && p.height) ? p.height / p.width : 0.75;
+    var best = S.gal.cols[0];
+    S.gal.cols.forEach(function (c) { if (c.h < best.h) best = c; });
+    best.el.appendChild(photoCard(p, function () {
+      openLightbox(S.gal.items, idx, { loadMore: galleryMore, admin: isAdmin(), designate: adminDesignate, remove: function (q) { return adminDelete(q); } });
+    }));
+    best.h += ratio + 0.28;
+  }
+  function renderGallery() {
+    var st = S.state || {};
+    var wrap = h("div", { class: "ogp-wrap" });
+    wrap.appendChild(h("p", { class: "ogp-lab", text: "GALERIE" }));
+    S.galTitle = h("h2", { class: "ogp-h", text: "LES PHOTOS DU CONCOURS" });
+    wrap.appendChild(S.galTitle);
+    S.galNotice = h("div", { class: "ogp-box", hidden: true }, [
+      h("div", { class: "ogp-lab m", text: "GALERIE COMMUNE SOUS SCELLÉS" }),
+      h("p", { class: "ogp-p", style: "margin:0", text: "Elle s’ouvrira plus tard. En attendant, tu vois ici les photos de ton équipe." })
+    ]);
+    wrap.appendChild(S.galNotice);
+    S.galHost = h("div", { class: "ogp-mas" });
+    S.galEmpty = h("div", { class: "ogp-empty", text: "Aucune photo à afficher pour l’instant.", hidden: true });
+    S.galMoreBtn = h("button", { type: "button", class: "og-btn-small ogp-more", text: "AFFICHER PLUS", hidden: true, onclick: function () { galleryMore(); } });
+    S.galSentinel = h("div", { class: "ogp-sentinel" });
+    wrap.appendChild(S.galEmpty); wrap.appendChild(S.galHost); wrap.appendChild(S.galMoreBtn); wrap.appendChild(S.galSentinel);
+    S.bodyEl.appendChild(wrap);
+    if (global.IntersectionObserver) {
+      S.io = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; }) && S.gal.more && !S.gal.loading) galleryMore();
+      }, { root: S.bodyEl, rootMargin: "800px 0px" });
+      S.io.observe(S.galSentinel);
+    }
+    galleryReload();
+  }
+  function galleryChrome() {
+    if (!S.galHost || S.tab !== "gallery") return;
+    function setHidden(el, v) { if (v) el.setAttribute("hidden", ""); else el.removeAttribute("hidden"); }
+    var st = S.state || {};
+    setHidden(S.galNotice, isAdmin() || !S.state || !!st.gallery_visible);
+    setHidden(S.galEmpty, !(S.gal.loaded && !S.gal.items.length));
+    setHidden(S.galMoreBtn, !S.gal.more);
+    var total = (st.total != null) ? st.total : S.gal.items.length;
+    S.galTitle.textContent = S.gal.loaded ? (total + " PHOTO" + (total > 1 ? "S" : "")) : "LES PHOTOS DU CONCOURS";
+  }
+  function galleryReload() {
+    if (!S.galHost || S.tab !== "gallery") return Promise.resolve();
+    S.gal.token++;
+    S.gal.items = []; S.gal.more = false; S.gal.next = null; S.gal.loading = false; S.gal.loaded = false;
+    buildColumns();
+    galleryChrome();
+    return galleryMore();
+  }
+  function galleryMore() {
+    if (S.gal.loading || !S.galHost) return Promise.resolve();
+    var tok = S.gal.token;
+    S.gal.loading = true;
+    var f = { limit: 24 };
+    if (S.gal.next) { f.before_ts = S.gal.next.before_ts; f.before_id = S.gal.next.before_id; }
+    return rpc("gallery", f).then(function (d) {
+      if (tok !== S.gal.token) return;
+      S.gal.loading = false;
+      if (d.error) { toast(d.error, "no"); return; }
+      (d.photos || []).forEach(function (p) { S.gal.items.push(p); placeCard(p, S.gal.items.length - 1); });
+      S.gal.more = !!d.more; S.gal.next = d.next || null; S.gal.loaded = true;
+      galleryChrome();
+    }, function () { if (tok === S.gal.token) { S.gal.loading = false; toast(offlineMsg(), "no"); } });
+  }
+  var resizeT = null;
+  function onResize() {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () {
+      if (S.isOpen && S.tab === "gallery" && S.galHost && S.gal.n !== colCount()) { buildColumns(); S.gal.items.forEach(function (p, i) { placeCard(p, i); }); }
+    }, 200);
+  }
+
+  // ======================================================================
+  //  Originaux (admin) : ouverture, téléchargement
+  // ======================================================================
+  function linkBox(url, label) {
+    var back = h("div", { class: "ogp-modal", role: "dialog", "aria-modal": "true", "aria-label": label });
+    var close = function () { if (back.parentNode) back.parentNode.removeChild(back); S.modalOpen = false; };
+    back.appendChild(h("div", { class: "ogp-modal-box" }, [
+      h("div", { class: "ogp-modal-title", text: label }),
+      h("p", { text: "Ton navigateur a bloqué l’ouverture automatique. Touche le bouton pour ouvrir l’original dans un nouvel onglet." }),
+      h("div", { class: "og-form-buttons" }, [
+        h("a", { class: "og-submit", href: url, target: "_blank", rel: "noopener", style: "text-align:center;text-decoration:none;display:block", text: "OUVRIR", onclick: function () { setTimeout(close, 200); } }),
+        h("button", { type: "button", class: "og-btn-small", text: "FERMER", onclick: close })
+      ])
+    ]));
+    S.modalOpen = true;
+    document.body.appendChild(back);
+  }
+  function openOriginal(p) {
+    var w = null;
+    try { w = global.open("", "_blank"); } catch (e) { w = null; }
+    return fn("download", { photo_id: p.id, mode: "view" }).then(function (r) {
+      if (!r.ok) { if (w) { try { w.close(); } catch (e) {} } toast(r.error || "Original indisponible.", "no"); return; }
+      if (w) { try { w.location.href = r.url; return; } catch (e) {} }
+      linkBox(r.url, "ORIGINAL PLEINE RÉSOLUTION");
+    }, function () { if (w) { try { w.close(); } catch (e) {} } toast(offlineMsg(), "no"); });
+  }
+  function downloadOriginal(p) {
+    return fn("download", { photo_id: p.id, mode: "download" }).then(function (r) {
+      if (!r.ok) { toast(r.error || "Téléchargement impossible.", "no"); return; }
+      var a = h("a", { href: r.url, download: r.filename || "", rel: "noopener", style: "display:none" });
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { if (a.parentNode) a.parentNode.removeChild(a); }, 1000);
+      toast("Téléchargement lancé : " + (r.filename || "photo") + " (" + fmtBytes(r.size_bytes) + ").", "ok");
+    }, function () { toast(offlineMsg(), "no"); });
+  }
+
+  // ======================================================================
+  //  Visionneuse plein écran (flèches, clavier, balayage)
+  // ======================================================================
+  function closeLightbox() {
+    if (!S.lb) return;
+    document.removeEventListener("keydown", S.lb.onKey, true);
+    if (S.lb.el && S.lb.el.parentNode) S.lb.el.parentNode.removeChild(S.lb.el);
+    S.lb = null; S.lbOpen = false;
+  }
+  function openLightbox(list, idx, opts) {
+    closeLightbox();
+    opts = opts || {};
+    var lb = { list: list, i: idx, opts: opts };
+    function more() { return opts.hasMore ? !!opts.hasMore() : !!S.gal.more; }
+    var count = h("span", { class: "ogp-muted" });
+    var img = h("img", { alt: "" });
+    var cap = h("div", { class: "ogp-lb-cap" });
+    var bPrev = h("button", { type: "button", class: "ogp-lb-nav p", "aria-label": "Photo précédente", text: "‹", onclick: function () { go(-1); } });
+    var bNext = h("button", { type: "button", class: "ogp-lb-nav n", "aria-label": "Photo suivante", text: "›", onclick: function () { go(1); } });
+    var bClose = h("button", { type: "button", class: "og-btn-small", text: "✕ FERMER", onclick: closeLightbox });
+    var stage = h("div", { class: "ogp-lb-stage" }, [bPrev, img, bNext]);
+    lb.el = h("div", { class: "ogp-lb", role: "dialog", "aria-modal": "true", "aria-label": "Photo agrandie" }, [h("div", { class: "ogp-lb-top" }, [count, bClose]), stage, cap]);
+    var downX = null, downY = null;
+    stage.addEventListener("pointerdown", function (e) { downX = e.clientX; downY = e.clientY; });
+    stage.addEventListener("pointerup", function (e) {
+      if (downX == null) return;
+      var dx = e.clientX - downX, dy = e.clientY - downY;
+      downX = null;
+      if (Math.abs(dx) > 50 && Math.abs(dy) < 90) go(dx < 0 ? 1 : -1);
+    });
+    lb.onKey = function (e) {
+      if (e.key === "Escape") { e.stopPropagation(); closeLightbox(); }
+      else if (e.key === "ArrowLeft") { e.stopPropagation(); go(-1); }
+      else if (e.key === "ArrowRight") { e.stopPropagation(); go(1); }
+    };
+    document.addEventListener("keydown", lb.onKey, true);
+    S.lb = lb; S.lbOpen = true;
+    document.body.appendChild(lb.el);
+
+    function src(p) { return p.display_path ? publicUrl(p.display_path) : (p.thumb_path ? publicUrl(p.thumb_path) : ""); }
+    function show() {
+      var p = list[lb.i];
+      if (!p) { closeLightbox(); return; }
+      count.textContent = (lb.i + 1) + " / " + list.length + (opts.loadMore && more() ? "+" : "");
+      var s = src(p);
+      img.onerror = function () { if (p.thumb_path && img.src !== publicUrl(p.thumb_path)) img.src = publicUrl(p.thumb_path); };
+      if (s) { img.removeAttribute("hidden"); img.src = s; img.alt = p.title || teamLabel(p); } else { img.removeAttribute("src"); img.setAttribute("hidden", ""); }
+      bPrev.disabled = lb.i <= 0;
+      bNext.disabled = lb.i >= list.length - 1 && !(opts.loadMore && more());
+      clear(cap);
+      if (p.is_winner) cap.appendChild(h("span", { class: "ogp-tag am", style: "margin-bottom:8px", text: "★ PHOTO GAGNANTE" }));
+      cap.appendChild(h("div", { class: "ogp-lab", style: "margin-top:6px", text: teamLabel(p) }));
+      cap.appendChild(h("h3", { text: p.title || "Sans titre" }));
+      if (p.author) cap.appendChild(h("p", { text: "Photo de " + p.author }));
+      if (p.description) cap.appendChild(h("p", { text: p.description }));
+      cap.appendChild(h("p", { text: fmtDateTime(p.created_at) + (opts.admin && p.size_bytes ? " · " + fmtBytes(p.size_bytes) + " · " + p.mime_type : "") }));
+      if (opts.admin) {
+        cap.appendChild(h("div", { class: "ogp-row", style: "margin-top:10px" }, [
+          h("button", { type: "button", class: "og-btn-small", text: "ORIGINAL ↗", onclick: function () { openOriginal(p); } }),
+          h("button", { type: "button", class: "og-btn-small", text: "TÉLÉCHARGER", onclick: function () { downloadOriginal(p); } }),
+          h("button", { type: "button", class: "og-btn-small ogp-pri", text: "★ DÉSIGNER COMME PHOTO GAGNANTE", onclick: function () { if (opts.designate) opts.designate(p); } }),
+          h("button", { type: "button", class: "og-btn-small og-btn-danger", text: "SUPPRIMER", onclick: function () {
+            Promise.resolve(opts.remove && opts.remove(p)).then(function (gone) {
+              if (!gone) return;
+              var k = list.indexOf(p);
+              if (k >= 0) list.splice(k, 1);
+              if (!list.length) { closeLightbox(); return; }
+              lb.i = Math.min(lb.i, list.length - 1);
+              show();
+            });
+          } })
+        ]));
+      }
+      [list[lb.i - 1], list[lb.i + 1]].forEach(function (q) { if (q && src(q)) { var pre = new Image(); pre.src = src(q); } });
+    }
+    function go(d) {
+      var n = lb.i + d;
+      if (n < 0) return;
+      if (n >= list.length) {
+        if (opts.loadMore && more()) {
+          var before = list.length;
+          opts.loadMore().then(function () { if (list.length > before) { lb.i = before; show(); } });
+        }
+        return;
+      }
+      lb.i = n;
+      show();
+    }
+    show();
+    try { bClose.focus(); } catch (e) {}
+  }
+
+  // ======================================================================
+  //  Onglet VERDICT : scellé, puis révélation animée
+  // ======================================================================
+  function sealSvg() {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    var r = document.createElementNS(ns, "rect");
+    r.setAttribute("x", "5"); r.setAttribute("y", "11"); r.setAttribute("width", "14"); r.setAttribute("height", "9");
+    var p = document.createElementNS(ns, "path");
+    p.setAttribute("d", "M8 11V8a4 4 0 0 1 8 0v3");
+    svg.appendChild(r); svg.appendChild(p);
+    return svg;
+  }
+  function sealedView() {
+    return h("div", { class: "ogp-seal-wrap" }, [
+      h("div", { class: "ogp-lab m", text: "DOSSIER CONFIDENTIEL" }),
+      h("div", { class: "ogp-seal" }, [sealSvg()]),
+      h("h2", { class: "ogp-h", style: "margin:0", text: "LE VERDICT EST SCELLÉ" }),
+      h("p", { class: "ogp-muted", text: "Ouverture sur décision de la direction, le moment venu." }),
+      h("div", { class: "ogp-stamp", text: "CLASSIFIÉ" })
+    ]);
+  }
+  function scramble(el, text) {
+    var chars = "█▓▒░#%&@$*+=?/", n = 0, total = 16;
+    var iv = setInterval(function () {
+      if (!document.body.contains(el)) { clearInterval(iv); return; }
+      n++;
+      var out = "";
+      for (var i = 0; i < text.length; i++) out += (text[i] === " " || i < (text.length * n / total)) ? text[i] : chars[Math.floor(Math.random() * chars.length)];
+      el.textContent = out;
+      if (n >= total) { clearInterval(iv); el.textContent = text; }
+    }, 55);
+  }
+  function verdictPhoto(v) {
+    var p = v.photo || {}, t = v.team || {};
+    return { id: p.id, title: p.title, description: p.description, thumb_path: p.thumb_path, display_path: p.display_path,
+             team_name: t.name, is_winner: true, author: v.author || null, created_at: null };
+  }
+  function adminPreview(d) {
+    var v = d.verdict, p = v.photo || {}, t = v.team || {};
+    var img = (p.thumb_path || p.display_path) ? h("img", { src: publicUrl(p.thumb_path || p.display_path), alt: p.title || "Photo gagnante désignée" }) : h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+    return h("div", { class: "ogp-box", style: "max-width:520px;margin:18px auto 0" }, [
+      h("div", { class: "ogp-lab", text: "APERÇU RÉSERVÉ À L’ADMINISTRATEUR" }),
+      h("div", { class: "ogp-win-box" }, [img, h("div", {}, [
+        h("div", { class: "ogp-lab m", text: "GAGNANT DÉSIGNÉ" }),
+        h("h3", { class: "ogp-h", style: "font-size:18px;margin:0 0 4px", text: String(t.name || "").toUpperCase() }),
+        h("p", { class: "ogp-muted", text: (p.title || "Sans titre") + (v.author ? " · " + v.author : "") }),
+        h("p", { class: "ogp-muted", text: "Invisible des participants tant que le verdict n’est pas révélé." })
+      ])])
+    ]);
+  }
+  function revealView(d) {
+    var v = d.verdict, p = v.photo || {}, t = v.team || {};
+    var key = "ogp:seen:" + p.id, seen = false;
+    try { seen = localStorage.getItem(key) === "1"; } catch (e) {}
+    var reduced = !!(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var teamText = String(t.name || "").toUpperCase();
+    var root = h("div", { class: "ogp-rev" + ((seen || reduced) ? " static" : " go") });
+    var src = p.display_path || p.thumb_path;
+    var photoEl = src ? h("img", { src: publicUrl(src), alt: p.title || "La photo gagnante" }) : h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+    var teamEl = h("div", { class: "team st s3", text: (seen || reduced) ? teamText : "" });
+    var frame = h("button", { type: "button", class: "ph", style: "cursor:pointer;color:inherit;font:inherit", "aria-label": "Agrandir la photo gagnante", onclick: function () { openLightbox([verdictPhoto(v)], 0, {}); } }, [photoEl]);
+    var details = h("div", { class: "st s4" });
+    if (v.author) details.appendChild(h("p", { class: "ogp-p", style: "margin:0 0 4px", text: "Photo de " + v.author }));
+    details.appendChild(h("p", { class: "ogp-quote", style: "margin:0", text: p.title ? "« " + p.title + " »" : "" }));
+    if (p.description) details.appendChild(h("p", { class: "ogp-muted", text: p.description }));
+    if (v.points) details.appendChild(h("div", { class: "pts", text: "+ " + v.points + " POINTS" }));
+    root.appendChild(h("div", { class: "scan" }));
+    root.appendChild(h("div", { class: "ogp-lab st s1", text: "DÉCLASSIFICATION TERMINÉE" }));
+    root.appendChild(h("h2", { class: "ogp-h st s2", text: "LA PHOTO QUI A MARQUÉ L’HISTOIRE" }));
+    root.appendChild(frame);
+    root.appendChild(h("div", { class: "ogp-lab m st s3", style: "margin-top:4px", text: "ÉQUIPE GAGNANTE" }));
+    root.appendChild(teamEl);
+    root.appendChild(details);
+    var replay = h("button", { type: "button", class: "og-btn-small", style: "margin-top:18px", text: "↻ REJOUER L’ANIMATION", onclick: function () {
+      root.className = "ogp-rev";
+      teamEl.textContent = "";
+      void root.offsetWidth;
+      root.className = "ogp-rev go";
+      setTimeout(function () { scramble(teamEl, teamText); }, 3400);
+    } });
+    if (!seen && !reduced) {
+      setTimeout(function () { scramble(teamEl, teamText); }, 3400);
+      try { localStorage.setItem(key, "1"); } catch (e) {}
+    }
+    return h("div", {}, [root, h("div", { style: "text-align:center" }, [replay])]);
+  }
+  function renderVerdict() {
+    var wrap = h("div", { class: "ogp-wrap" }, [emptyBox("Chargement…")]);
+    S.bodyEl.appendChild(wrap);
+    rpc("verdict").then(function (d) {
+      if (S.tab !== "verdict" || !wrap.parentNode) return;
+      clear(wrap);
+      if (d.error) { wrap.appendChild(emptyBox(d.error)); return; }
+      S.verdict = d;
+      if (d.sealed && !d.verdict) { wrap.appendChild(sealedView()); return; }
+      if (d.sealed && d.verdict) { wrap.appendChild(sealedView()); wrap.appendChild(adminPreview(d)); return; }
+      wrap.appendChild(revealView(d));
+    }, function () { clear(wrap); wrap.appendChild(emptyBox(offlineMsg())); });
+  }
+
+  // ======================================================================
+  //  Onglet GESTION (administrateur)
+  // ======================================================================
+  function setHiddenAttr(el, v) { if (v) el.setAttribute("hidden", ""); else el.removeAttribute("hidden"); }
+  function colorOf(on) { return on ? "color:var(--granted);border-color:var(--granted)" : "color:#e0715f;border-color:var(--denied)"; }
+
+  function adminSet(fields) {
+    return rpc("settings_set", fields).then(function (d) {
+      if (d.error) { toast(d.error, "no"); return false; }
+      applyState(d);
+      toast("Réglage enregistré.", "ok");
+      return true;
+    }, function () { toast(offlineMsg(), "no"); return false; });
+  }
+  function toggleRow(label, valueText, on, onClick) {
+    return h("div", { class: "ogp-row ogp-sp", style: "min-height:48px;border-bottom:1px solid var(--line)" }, [
+      h("span", { class: "ogp-p", style: "margin:0", text: label }),
+      h("button", { type: "button", class: "og-btn-small", style: colorOf(on), "aria-pressed": on ? "true" : "false", text: valueText, onclick: onClick })
+    ]);
+  }
+  function renderManageSettings() {
+    if (!S.mSet || S.tab !== "manage") return;
+    var st = S.state;
+    clear(S.mSet);
+    var box = h("div", { class: "ogp-box" });
+    box.appendChild(h("div", { class: "ogp-lab", text: "PARAMÈTRES DE L’ÉPREUVE" }));
+    if (!st) { box.appendChild(emptyBox(S.stateError ? ("Indisponible : " + S.stateError) : "Chargement…")); S.mSet.appendChild(box); return; }
+    var eps = (cfg.getEpreuves && cfg.getEpreuves()) || [];
+    var linked = null;
+    eps.forEach(function (e) { if (String(e.id) === String(st.epreuve_id)) linked = e; });
+    var effOpen = !!st.open;
+    box.appendChild(toggleRow("Participations", st.is_open_flag ? "OUVERTES" : "FERMÉES", !!st.is_open_flag, function () { adminSet({ is_open: !(S.state && S.state.is_open_flag) }); }));
+    if (st.is_open_flag && !effOpen) box.appendChild(h("p", { class: "ogp-muted", style: "margin:6px 0 0", text: "L’heure de clôture est dépassée : les envois sont de fait fermés." }));
+    // clôture
+    var dt = h("input", { type: "datetime-local", "aria-label": "Date et heure de clôture" });
+    dt.value = toLocalInput(st.closes_at);
+    box.appendChild(h("div", { class: "ogp-set" }, [
+      h("label", { text: "DATE ET HEURE DE CLÔTURE" }), dt,
+      h("div", { class: "ogp-row", style: "margin-top:6px" }, [
+        h("button", { type: "button", class: "og-btn-small ogp-pri", text: "ENREGISTRER LA CLÔTURE", onclick: function () {
+          if (!dt.value) { toast("Choisis une date et une heure, ou utilise EFFACER.", "no"); return; }
+          var d = new Date(dt.value);
+          if (isNaN(d.getTime())) { toast("Date invalide.", "no"); return; }
+          adminSet({ closes_at: d.toISOString() });
+        } }),
+        h("button", { type: "button", class: "og-btn-small", text: "EFFACER", onclick: function () { adminSet({ closes_at: null }); } })
+      ]),
+      st.closes_at ? h("p", { class: "ogp-muted", style: "margin:4px 0 0", text: "Clôture actuelle : " + fmtDateTime(st.closes_at) }) : h("p", { class: "ogp-muted", style: "margin:4px 0 0", text: "Aucune heure de clôture définie." })
+    ]));
+    box.appendChild(toggleRow("Galerie commune visible des participants", st.gallery_visible ? "VISIBLE" : "MASQUÉE", !!st.gallery_visible, function () { adminSet({ gallery_visible: !(S.state && S.state.gallery_visible) }); }));
+    box.appendChild(toggleRow("Noms d’équipes affichés dans la galerie", st.show_team_names ? "AFFICHÉS" : "MASQUÉS", !!st.show_team_names, function () { adminSet({ show_team_names: !(S.state && S.state.show_team_names) }); }));
+    box.appendChild(toggleRow("Nom de l’auteur affiché (galerie et verdict)", st.show_authors ? "AFFICHÉ" : "MASQUÉ", !!st.show_authors, function () { adminSet({ show_authors: !(S.state && S.state.show_authors) }); }));
+    // points + épreuve liée
+    var pts = h("input", { type: "number", inputmode: "numeric", step: "1", min: "0", "aria-label": "Points de l’épreuve" });
+    pts.value = st.points != null ? st.points : 0;
+    var sel = h("select", { "aria-label": "Épreuve liée au concours" });
+    sel.appendChild(h("option", { value: "", text: "— aucune —" }));
+    eps.forEach(function (e) { var o = h("option", { value: e.id, text: e.title + (e.visible ? "" : " (cachée)") }); if (String(e.id) === String(st.epreuve_id)) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", function () { adminSet({ epreuve_id: sel.value || null }); });
+    box.appendChild(h("div", { class: "ogp-set" }, [
+      h("label", { text: "POINTS ATTRIBUÉS AU GAGNANT" }), pts,
+      h("div", { class: "ogp-row", style: "margin-top:6px" }, [h("button", { type: "button", class: "og-btn-small ogp-pri", text: "ENREGISTRER LES POINTS", onclick: function () {
+        var n = parseInt(pts.value, 10);
+        if (!isFinite(n) || n < 0) { toast("Nombre de points invalide.", "no"); return; }
+        adminSet({ points: n });
+      } })]),
+      h("label", { text: "ÉPREUVE LIÉE (RÉVÉLATION, POINTS, CLASSEMENT)" }), sel
+    ]));
+    if (linked && !linked.visible) box.appendChild(h("p", { class: "ogp-muted", style: "margin:8px 0 0", text: "L’épreuve liée est CACHÉE : les participants ne voient pas le concours tant que tu ne l’as pas révélée dans la rubrique ÉPREUVES." }));
+    if (!linked) box.appendChild(h("p", { class: "ogp-muted", style: "margin:8px 0 0", text: "Aucune épreuve liée : sans elle, le concours reste invisible des participants et les points ne peuvent pas être attribués." }));
+    S.mSet.appendChild(box);
+  }
+
+  // ---- verdict / gagnant / points
+  function loadAdminVerdict() {
+    return rpc("verdict").then(function (d) { S.adm.verdict = d.error ? null : d; renderManageWinner(); }, function () {});
+  }
+  function afterVerdictChange(d) {
+    if (d) applyState(d);
+    loadAdminVerdict();
+    if (S.tab === "manage") adminListReload();
+  }
+  function renderManageWinner() {
+    if (!S.mWin || S.tab !== "manage") return;
+    var st = S.state || {}, d = S.adm.verdict;
+    clear(S.mWin);
+    var box = h("div", { class: "ogp-box" }, [h("div", { class: "ogp-lab", text: "PHOTO GAGNANTE ET VERDICT" })]);
+    if (!d || !d.verdict) {
+      box.appendChild(h("p", { class: "ogp-p", style: "margin:0", text: "Aucune photo gagnante désignée. Ouvre une photo (galerie ou liste ci-dessous), compare-les, puis utilise « DÉSIGNER COMME PHOTO GAGNANTE »." }));
+      S.mWin.appendChild(box);
+      return;
+    }
+    var v = d.verdict, p = v.photo || {}, t = v.team || {}, revealed = !!st.revealed;
+    var img = (p.thumb_path || p.display_path) ? h("img", { src: publicUrl(p.thumb_path || p.display_path), alt: p.title || "Photo gagnante" }) : h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+    box.appendChild(h("div", { class: "ogp-win-box" }, [img, h("div", {}, [
+      h("div", { class: "ogp-row", style: "margin-bottom:6px" }, [h("span", { class: "ogp-tag " + (revealed ? "ok" : "am"), text: revealed ? "VERDICT RÉVÉLÉ" : "SCELLÉ" })]),
+      h("h3", { class: "ogp-h", style: "font-size:20px;margin:0 0 4px", text: String(t.name || "").toUpperCase() }),
+      h("p", { class: "ogp-muted", text: (p.title || "Sans titre") + (v.author ? " · " + v.author : "") })
+    ])]));
+    var acts = h("div", { class: "ogp-row", style: "margin-top:12px" });
+    if (!revealed) {
+      acts.appendChild(h("button", { type: "button", class: "og-btn-small ogp-pri", text: "RÉVÉLER LE VERDICT", onclick: function () {
+        confirmBox({ title: "Révéler le verdict ?", text: "Tous les participants verront immédiatement la photo gagnante et le nom de l’équipe, avec l’animation de révélation.", ok: "RÉVÉLER MAINTENANT" }).then(function (yes) {
+          if (!yes) return;
+          rpc("reveal_set", { revealed: true }).then(function (r) { if (r.error) toast(r.error, "no"); else { toast("Verdict révélé.", "ok"); afterVerdictChange(r); } }, function () { toast(offlineMsg(), "no"); });
+        });
+      } }));
+      acts.appendChild(h("button", { type: "button", class: "og-btn-small", text: "RETIRER LA DÉSIGNATION", onclick: function () {
+        confirmBox({ title: "Retirer la désignation ?", text: "Plus aucune photo ne sera désignée gagnante.", ok: "RETIRER" }).then(function (yes) {
+          if (!yes) return;
+          rpc("winner_clear").then(function (r) { if (r.error) toast(r.error, "no"); else { toast("Désignation retirée.", "ok"); afterVerdictChange(r); } }, function () { toast(offlineMsg(), "no"); });
+        });
+      } }));
+    } else {
+      acts.appendChild(h("button", { type: "button", class: "og-btn-small", text: "MASQUER À NOUVEAU LE VERDICT", onclick: function () {
+        confirmBox({ title: "Masquer à nouveau le verdict ?", text: "Les participants ne verront plus la photo gagnante, et tu pourras de nouveau changer ton choix.", ok: "MASQUER" }).then(function (yes) {
+          if (!yes) return;
+          rpc("reveal_set", { revealed: false }).then(function (r) { if (r.error) toast(r.error, "no"); else { toast("Verdict de nouveau scellé.", "ok"); afterVerdictChange(r); } }, function () { toast(offlineMsg(), "no"); });
+        });
+      } }));
+    }
+    box.appendChild(acts);
+
+    // Points : jamais automatiques, toujours validés ici
+    var pts = st.points || 0, awarded = !!st.awarded_at;
+    var outdated = awarded && (String(st.award_team_id) !== String(t.id) || st.award_points !== pts);
+    var pbox = h("div", { style: "margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)" }, [h("div", { class: "ogp-lab m", text: "POINTS DE L’ÉPREUVE" })]);
+    if (awarded) pbox.appendChild(h("p", { class: "ogp-p", style: "margin:0 0 8px", text: "Attribués : +" + st.award_points + " point" + (st.award_points > 1 ? "s" : "") + " à l’équipe gagnante" + (outdated ? " (l’attribution ne correspond plus au gagnant ou aux points actuels : ré-attribue-les)." : ".") }));
+    else pbox.appendChild(h("p", { class: "ogp-p", style: "margin:0 0 8px", text: pts > 0 ? "Aucun point attribué pour l’instant. Rien n’est attribué automatiquement." : "Définis d’abord le nombre de points dans les paramètres." }));
+    var prow = h("div", { class: "ogp-row" });
+    if (!awarded || outdated) prow.appendChild(h("button", { type: "button", class: "og-btn-small ogp-pri", disabled: pts <= 0, text: "ATTRIBUER " + pts + " POINTS À L’ÉQUIPE " + String(t.name || "").toUpperCase(), onclick: function () {
+      confirmBox({ title: "Attribuer les points ?", text: pts + " points seront ajoutés à l’équipe " + String(t.name || "").toUpperCase() + " dans le classement.\nUne seule attribution est possible : aucun doublon.", ok: "ATTRIBUER " + pts + " POINTS" }).then(function (yes) {
+        if (!yes) return;
+        rpc("points_award", { confirm: true }).then(function (r) {
+          if (r.error) { toast(r.error, "no"); return; }
+          toast(r.already ? "Points déjà attribués." : "Points attribués au classement.", "ok");
+          afterVerdictChange(r);
+          if (cfg.refreshPoints) { try { cfg.refreshPoints(); } catch (e) {} }
+        }, function () { toast(offlineMsg(), "no"); });
+      });
+    } }));
+    if (awarded) prow.appendChild(h("button", { type: "button", class: "og-btn-small og-btn-danger", text: "ANNULER L’ATTRIBUTION", onclick: function () {
+      confirmBox({ title: "Annuler l’attribution ?", text: "Les points seront retirés à l’équipe gagnante.", ok: "ANNULER L’ATTRIBUTION", danger: true }).then(function (yes) {
+        if (!yes) return;
+        rpc("points_revoke").then(function (r) {
+          if (r.error) { toast(r.error, "no"); return; }
+          toast("Attribution annulée.", "ok");
+          afterVerdictChange(r);
+          if (cfg.refreshPoints) { try { cfg.refreshPoints(); } catch (e) {} }
+        }, function () { toast(offlineMsg(), "no"); });
+      });
+    } }));
+    pbox.appendChild(prow);
+    box.appendChild(pbox);
+    S.mWin.appendChild(box);
+  }
+
+  // ---- statistiques et participation
+  function loadSummary() {
+    return rpc("summary").then(function (d) { if (!d.error) { S.adm.summary = d; renderManageStats(); renderManageFilters(); } }, function () {});
+  }
+  function renderManageStats() {
+    if (!S.mStats || S.tab !== "manage") return;
+    var s = S.adm.summary;
+    clear(S.mStats);
+    if (!s) return;
+    S.mStats.appendChild(h("div", { class: "ogp-stats" }, [
+      h("div", { class: "ogp-stat" }, [h("b", { text: String(s.total) }), h("span", { text: "PHOTOS REÇUES" })]),
+      h("div", { class: "ogp-stat" }, [h("b", { text: String((s.teams || []).length) }), h("span", { text: "ÉQUIPES PARTICIPANTES" })]),
+      h("div", { class: "ogp-stat" }, [h("b", { text: String(s.pending) }), h("span", { text: "ENVOIS INCOMPLETS" })]),
+      h("div", { class: "ogp-stat" }, [h("b", { text: fmtBytes(s.bytes) }), h("span", { text: "ORIGINAUX STOCKÉS" })])
+    ]));
+    var box = h("div", { class: "ogp-box" }, [h("div", { class: "ogp-lab m", text: "ÉQUIPES AYANT PARTICIPÉ" })]);
+    var chips = h("div", { class: "ogp-chips" });
+    (s.teams || []).forEach(function (t) {
+      chips.appendChild(h("button", { type: "button", class: "og-btn-small" + (String(S.adm.team) === String(t.team_id) ? " og-chip-on" : ""), text: String(t.name).toUpperCase() + " (" + t.photos + ")",
+        onclick: function () { S.adm.team = String(S.adm.team) === String(t.team_id) ? "" : String(t.team_id); S.adm.author = ""; renderManageStats(); renderManageFilters(); adminListReload(); } }));
+    });
+    if (!(s.teams || []).length) chips.appendChild(h("span", { class: "ogp-muted", text: "Aucune équipe n’a encore envoyé de photo." }));
+    box.appendChild(chips);
+    if (s.pending > 0) box.appendChild(h("button", { type: "button", class: "og-btn-small", text: "NETTOYER LES ENVOIS INCOMPLETS (" + s.pending + ")", onclick: function () {
+      confirmBox({ title: "Nettoyer les envois incomplets ?", text: "Seuls les envois interrompus depuis plus de 36 heures seront supprimés (lignes et fichiers partiels).", ok: "NETTOYER" }).then(function (yes) {
+        if (!yes) return;
+        fn("purge", { hours: 36 }).then(function (r) { if (r.ok) { toast(r.removed + " envoi(s) incomplet(s) supprimé(s).", "ok"); loadSummary(); refreshState(); } else toast(r.error || "Nettoyage impossible.", "no"); }, function () { toast(offlineMsg(), "no"); });
+      });
+    } }));
+    S.mStats.appendChild(box);
+  }
+
+  // ---- liste complète, filtres, comparaison
+  function renderManageFilters() {
+    if (!S.mFil) return;
+    var s = S.adm.summary || { teams: [], authors: [] };
+    clear(S.mFil);
+    var selT = h("select", { "aria-label": "Filtrer par équipe" }, [h("option", { value: "", text: "Équipe : toutes" })]);
+    (s.teams || []).forEach(function (t) { var o = h("option", { value: t.team_id, text: String(t.name).toUpperCase() }); if (String(t.team_id) === String(S.adm.team)) o.selected = true; selT.appendChild(o); });
+    var selA = h("select", { "aria-label": "Filtrer par participant" }, [h("option", { value: "", text: "Participant : tous" })]);
+    (s.authors || []).filter(function (a) { return !S.adm.team || String(a.team_id) === String(S.adm.team); }).forEach(function (a) {
+      var o = h("option", { value: a.author_id, text: a.label + " (" + a.photos + ")" }); if (String(a.author_id) === String(S.adm.author)) o.selected = true; selA.appendChild(o);
+    });
+    selT.addEventListener("change", function () { S.adm.team = selT.value; S.adm.author = ""; renderManageStats(); renderManageFilters(); adminListReload(); });
+    selA.addEventListener("change", function () { S.adm.author = selA.value; adminListReload(); });
+    S.mFil.appendChild(h("div", { class: "ogp-fil" }, [selT, selA]));
+  }
+  function selCount() { return Object.keys(S.adm.sel).length; }
+  function renderCompareBar() {
+    if (!S.mCmp) return;
+    clear(S.mCmp);
+    var n = selCount();
+    if (!n) return;
+    S.mCmp.appendChild(h("div", { class: "ogp-box ogp-row ogp-sp" }, [
+      h("span", { class: "ogp-p", style: "margin:0", text: n + " photo" + (n > 1 ? "s" : "") + " sélectionnée" + (n > 1 ? "s" : "") + (n < 2 ? " : choisis-en au moins 2 pour comparer." : "") }),
+      h("div", { class: "ogp-row" }, [
+        h("button", { type: "button", class: "og-btn-small ogp-pri", text: "COMPARER (" + n + ")", disabled: n < 2, onclick: openCompare }),
+        h("button", { type: "button", class: "og-btn-small", text: "VIDER", onclick: function () { S.adm.sel = {}; renderCompareBar(); adminListRepaint(); } })
+      ])
+    ]));
+  }
+  function adminCard(p, idx) {
+    var sel = !!S.adm.sel[p.id];
+    var card = h("div", { class: "ogp-acard" + (sel ? " sel" : "") + (p.is_winner ? " win" : "") });
+    var im = p.thumb_path ? h("img", { src: publicUrl(p.thumb_path), alt: p.title || "Photo", loading: "lazy", decoding: "async" }) : h("div", { class: "noimg", style: "aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)", text: "APERÇU INDISPONIBLE" });
+    card.appendChild(h("button", { type: "button", class: "im", "aria-label": "Ouvrir la photo", onclick: function () {
+      openLightbox(S.adm.items, idx, { admin: true, hasMore: function () { return S.adm.more; }, loadMore: adminListMore, designate: adminDesignate, remove: function (q) { return adminDelete(q); } });
+    } }, [im]));
+    card.appendChild(h("div", { class: "meta" }, [
+      p.is_winner ? h("span", { class: "ogp-tag am", style: "margin-bottom:6px", text: "★ DÉSIGNÉE" }) : null,
+      h("div", {}, [h("b", { text: teamLabel(p) })]),
+      h("div", { text: (p.author || "—") + (p.title ? " · " + p.title : "") }),
+      h("div", { class: "ogp-muted", text: fmtBytes(p.size_bytes) + " · " + String(p.mime_type || "").replace("image/", "").toUpperCase() })
+    ]));
+    var ck = h("input", { type: "checkbox" });
+    ck.checked = sel;
+    ck.addEventListener("change", function () {
+      if (ck.checked) {
+        if (selCount() >= 6) { ck.checked = false; toast("6 photos maximum dans une comparaison.", "no"); return; }
+        S.adm.sel[p.id] = p;
+      } else delete S.adm.sel[p.id];
+      card.classList.toggle("sel", ck.checked);
+      renderCompareBar();
+    });
+    card.appendChild(h("label", { class: "ck" }, [ck, "COMPARER"]));
+    card.appendChild(h("div", { class: "acts" }, [
+      h("button", { type: "button", class: "og-btn-small ogp-sm", text: "ORIGINAL ↗", onclick: function () { openOriginal(p); } }),
+      h("button", { type: "button", class: "og-btn-small ogp-sm", text: "TÉLÉCHARGER", onclick: function () { downloadOriginal(p); } }),
+      h("button", { type: "button", class: "og-btn-small ogp-sm ogp-pri", text: "★ DÉSIGNER", onclick: function () { adminDesignate(p); } }),
+      h("button", { type: "button", class: "og-btn-small ogp-sm og-btn-danger", text: "SUPPRIMER", onclick: function () { adminDelete(p); } })
+    ]));
+    return card;
+  }
+  function adminListRepaint() {
+    if (!S.mGrid) return;
+    clear(S.mGrid);
+    S.adm.items.forEach(function (p, i) { S.mGrid.appendChild(adminCard(p, i)); });
+    setHiddenAttr(S.mEmpty, !(S.adm.loaded && !S.adm.items.length));
+    setHiddenAttr(S.mMore, !S.adm.more);
+  }
+  function adminListReload() {
+    if (!S.mGrid || S.tab !== "manage") return Promise.resolve();
+    S.adm.token++;
+    S.adm.items = []; S.adm.more = false; S.adm.next = null; S.adm.loading = false; S.adm.loaded = false;
+    adminListRepaint();
+    return adminListMore();
+  }
+  function adminListMore() {
+    if (S.adm.loading || !S.mGrid) return Promise.resolve();
+    var tok = S.adm.token;
+    S.adm.loading = true;
+    var f = { limit: 24 };
+    if (S.adm.team) f.team_id = S.adm.team;
+    if (S.adm.author) f.author_id = S.adm.author;
+    if (S.adm.next) { f.before_ts = S.adm.next.before_ts; f.before_id = S.adm.next.before_id; }
+    return rpc("gallery", f).then(function (d) {
+      if (tok !== S.adm.token) return;
+      S.adm.loading = false;
+      if (d.error) { toast(d.error, "no"); return; }
+      (d.photos || []).forEach(function (p) { S.adm.items.push(p); S.mGrid.appendChild(adminCard(p, S.adm.items.length - 1)); });
+      S.adm.more = !!d.more; S.adm.next = d.next || null; S.adm.loaded = true;
+      setHiddenAttr(S.mEmpty, !(S.adm.loaded && !S.adm.items.length));
+      setHiddenAttr(S.mMore, !S.adm.more);
+    }, function () { if (tok === S.adm.token) { S.adm.loading = false; toast(offlineMsg(), "no"); } });
+  }
+
+  function closeCompare() {
+    if (S.cmpEl && S.cmpEl.parentNode) S.cmpEl.parentNode.removeChild(S.cmpEl);
+    S.cmpEl = null; S.cmpOpen = false;
+  }
+  function openCompare() {
+    closeCompare();
+    var list = Object.keys(S.adm.sel).map(function (k) { return S.adm.sel[k]; });
+    if (list.length < 2) return;
+    var grid = h("div", { class: "ogp-cmp-grid" });
+    list.forEach(function (p) {
+      var src = p.display_path || p.thumb_path;
+      grid.appendChild(h("div", { class: "ogp-cmp-it" }, [
+        src ? h("img", { src: publicUrl(src), alt: p.title || "Photo" }) : h("div", { class: "ogp-empty", text: "APERÇU INDISPONIBLE" }),
+        h("div", { class: "ogp-lab", style: "margin:8px 0 2px", text: teamLabel(p) }),
+        h("div", { class: "ogp-p", style: "margin:0 0 8px", text: (p.title || "Sans titre") + (p.author ? " · " + p.author : "") }),
+        h("div", { class: "ogp-row" }, [
+          h("button", { type: "button", class: "og-btn-small ogp-sm", text: "ORIGINAL ↗", onclick: function () { openOriginal(p); } }),
+          h("button", { type: "button", class: "og-btn-small ogp-sm ogp-pri", text: "★ DÉSIGNER", onclick: function () { adminDesignate(p).then(function (ok) { if (ok) closeCompare(); }); } })
+        ])
+      ]));
+    });
+    S.cmpEl = h("div", { class: "ogp-cmp", role: "dialog", "aria-modal": "true", "aria-label": "Comparaison des photos" }, [
+      h("div", { class: "ogp-row ogp-sp" }, [h("div", { class: "ogp-h", style: "margin:0;font-size:18px", text: "COMPARAISON (" + list.length + ")" }), h("button", { type: "button", class: "og-btn-small", text: "✕ FERMER", onclick: closeCompare })]),
+      grid
+    ]);
+    S.cmpOpen = true;
+    document.body.appendChild(S.cmpEl);
+  }
+
+  // ---- actions partagées (visionneuse + liste + comparaison)
+  function adminDesignate(p) {
+    return confirmBox({
+      title: "Désigner la photo gagnante ?",
+      text: "Photo « " + (p.title || "sans titre") + " » de l’équipe " + (p.team_name ? String(p.team_name).toUpperCase() : "?") + ".\nElle reste secrète tant que tu ne révèles pas le verdict. Tu peux encore changer d’avis avant la révélation.",
+      ok: "DÉSIGNER COMME PHOTO GAGNANTE"
+    }).then(function (yes) {
+      if (!yes) return false;
+      return rpc("winner_set", { photo_id: p.id, confirm: true }).then(function (d) {
+        if (d.error) { toast(d.error, "no"); return false; }
+        applyState(d);
+        toast("Photo gagnante désignée. Le verdict reste scellé.", "ok");
+        S.gal.items.forEach(function (q) { q.is_winner = q.id === p.id; });
+        S.adm.items.forEach(function (q) { q.is_winner = q.id === p.id; });
+        if (S.tab === "manage") { loadAdminVerdict(); adminListRepaint(); }
+        return true;
+      }, function () { toast(offlineMsg(), "no"); return false; });
+    });
+  }
+  function adminDelete(p) {
+    return confirmBox({ title: "Supprimer cette photo ?", text: "Photo « " + (p.title || "sans titre") + " » de l’équipe " + (p.team_name ? String(p.team_name).toUpperCase() : "?") + ".\nLe fichier original sera définitivement effacé.", ok: "SUPPRIMER", danger: true }).then(function (yes) {
+      if (!yes) return false;
+      return fn("delete", { photo_id: p.id }).then(function (r) {
+        if (!r.ok) { toast(r.error || "Suppression impossible.", "no"); return false; }
+        toast("Photo supprimée.", "ok");
+        var drop = function (arr) { var k = arr.indexOf(p); if (k >= 0) arr.splice(k, 1); else for (var i = arr.length - 1; i >= 0; i--) if (arr[i].id === p.id) arr.splice(i, 1); };
+        drop(S.adm.items); drop(S.gal.items); drop(S.mine.items);
+        delete S.adm.sel[p.id];
+        refreshState();
+        if (S.tab === "manage") { adminListRepaint(); renderCompareBar(); loadSummary(); loadAdminVerdict(); }
+        if (S.tab === "gallery") { buildColumns(); S.gal.items.forEach(function (q, i) { placeCard(q, i); }); galleryChrome(); }
+        return true;
+      }, function () { toast(offlineMsg(), "no"); return false; });
+    });
+  }
+
+  function renderManage() {
+    var wrap = h("div", { class: "ogp-wrap" });
+    wrap.appendChild(h("p", { class: "ogp-lab", text: "GESTION DU CONCOURS PHOTO" }));
+    wrap.appendChild(h("h2", { class: "ogp-h", text: "PILOTAGE DE L’ÉPREUVE" }));
+    S.mSet = h("div"); S.mWin = h("div"); S.mStats = h("div"); S.mFil = h("div"); S.mCmp = h("div");
+    S.mGrid = h("div", { class: "ogp-agrid" });
+    S.mEmpty = h("div", { class: "ogp-empty", text: "Aucune photo ne correspond à ce filtre.", hidden: true });
+    S.mMore = h("button", { type: "button", class: "og-btn-small ogp-more", text: "AFFICHER PLUS", hidden: true, onclick: function () { adminListMore(); } });
+    wrap.appendChild(S.mSet); wrap.appendChild(S.mWin); wrap.appendChild(S.mStats);
+    wrap.appendChild(h("div", { class: "ogp-lab", style: "margin-top:18px", text: "TOUTES LES PHOTOS REÇUES" }));
+    wrap.appendChild(S.mFil); wrap.appendChild(S.mCmp); wrap.appendChild(S.mEmpty); wrap.appendChild(S.mGrid); wrap.appendChild(S.mMore);
+    S.bodyEl.appendChild(wrap);
+    renderManageSettings();
+    renderCompareBar();
+    loadAdminVerdict();
+    loadSummary().then(function () { return adminListReload(); });
+    adminListReload();
+  }
+
+  // ======================================================================
+  //  API publique (utilisée par index.html)
+  // ======================================================================
+  var OGP = {};
+  // Nettoie les adresses de reprise d'envoi oubliées (plus de 26 h : elles ont expiré côté serveur)
+  function pruneTusStore() {
+    try {
+      var drop = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf("ogp:tus:") === 0) {
+          var v = null;
+          try { v = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) {}
+          if (!v || !v.ts || Date.now() - v.ts > 26 * 3600 * 1000) drop.push(k);
+        }
+      }
+      drop.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+  OGP.init = function (config) {
+    cfg = config;
+    injectStyle();
+    ensureToast();
+    if (!S.resizeBound) { global.addEventListener("resize", onResize); S.resizeBound = true; }
+    pruneTusStore();
+  };
+  OGP.start = function () {
+    if (!cfg || S.started) return;
+    S.started = true;
+    refreshState().then(function () { schedule(); });
+    document.addEventListener("visibilitychange", function () { if (!document.hidden && S.started) refreshState(); });
+  };
+  OGP.stop = function () { S.started = false; clearTimeout(S.timer); closeOverlay(); };
+  OGP.decorate = decorate;
+  OGP.open = openOverlay;
+  OGP.refresh = refreshState;
+  OGP._test = { S: S, rpc: rpc, fn: fn, addFiles: addFiles, startItems: startItems, tusUpload: tusUpload, sniffInfo: function () { return null; }, setTab: setTab, openLightbox: openLightbox, closeLightbox: closeLightbox, confirmBox: confirmBox, fileHash: fileHash, guessType: guessType };
+  global.OGPhoto = OGP;
+
+})(window);
+
+</script>
+<!-- OG-PHOTO-MODULE:END -->
 <script>
   // Prépare le coffre en arrière-plan pendant que le visiteur est sur la page de connexion
   window.addEventListener("load", function () {
@@ -1085,6 +2878,7 @@
 
         item.appendChild(controls);
       }
+      if (window.OGPhoto) { try { window.OGPhoto.decorate(item, epreuve); } catch (e) { console.error("Concours photo :", e); } }
       container.appendChild(item);
     });
   }
@@ -1503,6 +3297,26 @@
     document.addEventListener("visibilitychange", loadExtras);
   }
 
+  // ---------- Concours photo (module photo-contest.js, facultatif) ----------
+  let photoContestReady = false;
+  function initPhotoContest() {
+    if (!window.OGPhoto) return;
+    try {
+      if (!photoContestReady) {
+        window.OGPhoto.init({
+          url: SUPABASE_URL,
+          key: SUPABASE_PUBLISHABLE_KEY,
+          getCreds: function () { return { identifier: appState.identifier, password: appState.password, admin: appState.role === "admin" }; },
+          getEpreuves: function () { return appState.epreuves || []; },
+          onChange: function () { renderEpreuves(); },
+          refreshPoints: function () { loadExtras(); }
+        });
+        photoContestReady = true;
+      }
+      window.OGPhoto.start();
+    } catch (e) { console.error("Concours photo :", e); }
+  }
+
   function prepareDashboard() {
     pageTitleEl.style.display = "none";
     terminalEl.style.display = "none";
@@ -1517,6 +3331,7 @@
     renderRanking();
     startRankPolling();
     startTransmissionsPolling();
+    initPhotoContest();
   }
 
   // ---------- Formulaire participant (admin) ----------
