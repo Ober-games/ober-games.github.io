@@ -226,6 +226,24 @@
     margin-top: 2px;
   }
 
+  /* Ordinateur : identité à gauche, accès (formulaire + compte à rebours) à droite.
+     Tout tient dans la fenêtre, sans avoir à faire défiler la page. Téléphone : inchangé. */
+  @media (min-width: 900px) and (min-height: 500px) {
+    body:not(.og-in) .og-terminal-wrap {
+      display: grid;
+      grid-template-columns: minmax(260px, 420px) minmax(340px, 460px);
+      grid-template-rows: auto auto;
+      justify-content: center;
+      align-content: center;
+      align-items: center;
+      column-gap: clamp(40px, 7vw, 120px);
+      padding: 24px 32px;
+    }
+    body:not(.og-in) .og-page-title { grid-column: 1; grid-row: 1 / span 2; margin: 0; }
+    body:not(.og-in) .og-terminal { grid-column: 2; grid-row: 1; }
+    body:not(.og-in) .og-countdown-wrap { grid-column: 2; grid-row: 2; }
+  }
+
   /* Dashboard (post-login "real page") */
   .og-dashboard { display: none; width: 100%; max-width: 980px; color: var(--text); }
   .og-dashboard-header {
@@ -312,6 +330,8 @@
     white-space: nowrap;
   }
   .og-badge-role { color: var(--muted); border-color: var(--line); }
+  /* Étiquettes (VOTRE ÉQUIPE, CACHÉ) : sur leur propre ligne, jamais en concurrence avec le nom */
+  .og-item-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: -6px 0 8px; }
 
   .og-item-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   .og-btn-small {
@@ -412,6 +432,7 @@
   .og-card-f b { display: block; margin-top: .15em; font-weight: 600; letter-spacing: .12em; color: var(--muted); font-size: min(1em, max(6px, calc((var(--w, 90px) - 1.5em - 2px) / (var(--wl, 8) * .68)))); overflow-wrap: break-word; }
   .og-card.og-known .og-card-f b { color: var(--text); letter-spacing: .04em; }
   .og-card.og-big { position: fixed; z-index: 20; font-size: calc(var(--w) / 11); animation: none; border-color: var(--team, var(--amber)); box-shadow: 0 0 0 1px var(--team, var(--amber)), 0 24px 60px rgba(0,0,0,.65); transform-origin: center; }
+  .og-card.og-big { height: auto; min-height: calc(var(--w) / .74); max-height: calc(100vh - 16px); overflow-y: auto; }
   .og-card.og-big::after { background: var(--team, var(--amber)); }
   .og-card.og-big .og-card-head { font-size: 1.15em; }
   .og-card.og-big .og-card-f b { color: var(--amber); letter-spacing: .05em; }
@@ -445,6 +466,11 @@
   }
   @media (max-width: 600px), (hover: none) and (pointer: coarse) {
     .og-form input, .og-form textarea, .og-form select { font-size: 16px; }
+  }
+  /* Ordinateur (écran large et paysage) : zones haute et basse plus compactes, les cartes gagnent de la place */
+  @media (min-width: 900px) and (min-aspect-ratio: 23/20) {
+    .og-cards-act { min-height: 104px; padding-top: 4px; }
+    .og-cards-top { padding: 14px 12px 4px; }
   }
   @media (prefers-reduced-motion: reduce) { .og-card { animation: none; } }
 
@@ -1088,7 +1114,7 @@
 .ogp-more{display:block;margin:14px auto 0;min-height:44px}
 .ogp-sentinel{height:1px}
 .ogp-empty{border:1px dashed var(--line);padding:22px 14px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
-.ogp-lb{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:rgba(5,6,4,.97);color:var(--text);font-family:var(--mono)}
+.ogp-lb{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:#050604;color:var(--text);font-family:var(--mono)}
 .ogp-lb *{box-sizing:border-box}
 .ogp-lb button{font-family:inherit}
 .ogp-lb-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
@@ -1109,7 +1135,7 @@
 .ogp-rev{max-width:720px;margin:0 auto;text-align:center;padding:6px 0 10px}
 .ogp-rev .st{opacity:0}
 .ogp-rev .ph{opacity:0;clip-path:inset(50% 50% 50% 50%);margin:18px auto;border:2px solid var(--amber);background:var(--panel);padding:6px;display:inline-block;max-width:100%}
-.ogp-rev .ph img{display:block;max-width:100%;max-height:62vh;height:auto;margin:0 auto}
+.ogp-rev .ph img{display:block;height:auto;max-height:50vh;margin:0 auto;object-fit:contain}
 .ogp-rev .scan{height:2px;width:0;background:var(--amber);margin:0 auto 14px;box-shadow:0 0 12px var(--amber)}
 .ogp-rev .team{font:700 34px/1.1 var(--sans);letter-spacing:.12em;color:var(--amber);margin:6px 0}
 .ogp-rev .pts{display:inline-block;margin-top:10px;border:1px solid var(--granted);color:var(--granted);padding:4px 12px;font-size:13px;letter-spacing:.14em}
@@ -1132,7 +1158,7 @@
 .ogp-toast.on{opacity:1;transform:none}
 .ogp-toast.ok{border-color:var(--granted)}
 .ogp-toast.no{border-color:var(--denied)}
-.ogp-set{display:grid;grid-template-columns:1fr;gap:4px}
+.ogp-set{display:block;max-width:560px}
 .ogp-set label{display:block;font-size:11px;letter-spacing:.12em;color:var(--muted);margin:12px 0 2px}
 .ogp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-bottom:12px}
 .ogp-stat{border:1px solid var(--line);background:var(--surface);padding:10px}
@@ -1147,7 +1173,9 @@
 .ogp-acard img{display:block;width:100%;height:auto}
 .ogp-acard .meta{padding:8px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
 .ogp-acard .meta b{color:var(--amber);letter-spacing:.1em}
-.ogp-acard .acts{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px 8px}
+.ogp-acard .acts{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 8px 8px}
+.ogp-acard .acts button{width:100%;padding-left:4px;padding-right:4px}
+.ogp-acard .acts .wide{grid-column:1 / -1}
 .ogp-acard label.ck{display:flex;align-items:center;gap:8px;padding:8px;min-height:44px;font-size:11px;letter-spacing:.1em;border-top:1px solid var(--line);cursor:pointer}
 .ogp-acard label.ck input{width:20px;height:20px;accent-color:var(--amber)}
 .ogp-cmp{position:fixed;inset:0;z-index:8800;overflow:auto;background:rgba(8,9,7,.98);padding:12px 12px calc(30px + env(safe-area-inset-bottom,0px));padding-top:calc(12px + env(safe-area-inset-top,0px))}
@@ -1163,7 +1191,7 @@
 @keyframes ogpScan{from{width:0}to{width:100%}}
 @keyframes ogpFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes ogpOpen{from{opacity:0;clip-path:inset(50% 50% 50% 50%)}to{opacity:1;clip-path:inset(0 0 0 0)}}
-@media (min-width:700px){.ogp-body{padding:20px 24px 40px}.ogp-h{font-size:26px}.ogp-fil{grid-template-columns:1fr 1fr 1fr}.ogp-set{grid-template-columns:1fr 1fr;gap:4px 16px}}
+@media (min-width:700px){.ogp-body{padding:20px 24px 40px}.ogp-h{font-size:26px}.ogp-fil{grid-template-columns:1fr 1fr 1fr}}
 @media (prefers-reduced-motion:reduce){.ogp-seal::before,.ogp-seal::after{animation:none}.ogp-rev.go .st,.ogp-rev.go .ph,.ogp-rev.go .scan{animation:none!important}}
 `;
   function injectStyle() {
@@ -2178,7 +2206,12 @@
     var teamText = String(t.name || "").toUpperCase();
     var root = h("div", { class: "ogp-rev" + ((seen || reduced) ? " static" : " go") });
     var src = p.display_path || p.thumb_path;
-    var photoEl = src ? h("img", { src: publicUrl(src), alt: p.title || "La photo gagnante" }) : h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+    var imgA = { src: publicUrl(src || ""), alt: p.title || "La photo gagnante" };
+    if (p.width && p.height) { imgA.width = p.width; imgA.height = p.height; }
+    var photoEl = src ? h("img", imgA) : h("div", { class: "noimg", text: "APERÇU INDISPONIBLE" });
+    // Cadre qui épouse la photo : largeur exprimée en unités absolues (indépendante de la taille du fichier)
+    if (src && p.width && p.height) photoEl.style.width = "min(720px, calc(100vw - 64px), calc(50vh * " + (p.width / p.height).toFixed(4) + "))";
+    else if (src) photoEl.style.maxWidth = "min(720px, calc(100vw - 64px))";
     var teamEl = h("div", { class: "team st s3", text: (seen || reduced) ? teamText : "" });
     var frame = h("button", { type: "button", class: "ph", style: "cursor:pointer;color:inherit;font:inherit", "aria-label": "Agrandir la photo gagnante", onclick: function () { openLightbox([verdictPhoto(v)], 0, {}); } }, [photoEl]);
     var details = h("div", { class: "st s4" });
@@ -2465,8 +2498,8 @@
     card.appendChild(h("div", { class: "acts" }, [
       h("button", { type: "button", class: "og-btn-small ogp-sm", text: "ORIGINAL ↗", onclick: function () { openOriginal(p); } }),
       h("button", { type: "button", class: "og-btn-small ogp-sm", text: "TÉLÉCHARGER", onclick: function () { downloadOriginal(p); } }),
-      h("button", { type: "button", class: "og-btn-small ogp-sm ogp-pri", text: "★ DÉSIGNER", onclick: function () { adminDesignate(p); } }),
-      h("button", { type: "button", class: "og-btn-small ogp-sm og-btn-danger", text: "SUPPRIMER", onclick: function () { adminDelete(p); } })
+      h("button", { type: "button", class: "og-btn-small ogp-sm ogp-pri wide", text: "★ DÉSIGNER", onclick: function () { adminDesignate(p); } }),
+      h("button", { type: "button", class: "og-btn-small ogp-sm og-btn-danger wide", text: "SUPPRIMER", onclick: function () { adminDelete(p); } })
     ]));
     return card;
   }
@@ -2779,10 +2812,11 @@
       const tcol = teamColorOf(team.id);
       if (tcol) { item.classList.add("og-item-team"); item.style.setProperty("--team", tcol); }
       const mine = appState.role !== "admin" && myTeamId() === String(team.id);
-      let html = '<div class="og-item-header"><strong>' + teamDot(team.id) + escapeHtml(team.name) + "</strong>";
-      if (appState.role === "admin" && !team.visible) html += '<span class="og-badge">CACHÉ</span>';
-      if (mine) html += '<span class="og-badge og-badge-mine"' + (tcol ? ' style="background:' + tcol + ";border-color:" + tcol + ";color:" + inkOn(tcol) + '"' : "") + ">VOTRE ÉQUIPE</span>";
-      html += "</div>";
+      let tags = "";
+      if (appState.role === "admin" && !team.visible) tags += '<span class="og-badge">CACHÉ</span>';
+      if (mine) tags += '<span class="og-badge og-badge-mine"' + (tcol ? ' style="background:' + tcol + ";border-color:" + tcol + ";color:" + inkOn(tcol) + '"' : "") + ">VOTRE ÉQUIPE</span>";
+      let html = (tags ? '<div class="og-item-tags">' + tags + "</div>" : "") +
+        '<div class="og-item-header"><strong>' + teamDot(team.id) + escapeHtml(team.name) + "</strong></div>";
       if (team.description) html += '<div class="og-item-desc">' + escapeHtml(team.description) + "</div>";
       html += teamMembersHtml(team);
       item.innerHTML = html;
@@ -2843,9 +2877,8 @@
     appState.epreuves.forEach((epreuve) => {
       const item = document.createElement("div");
       item.className = "og-item" + (epreuve.visible ? "" : " og-item-hidden");
-      let html = '<div class="og-item-header"><strong>' + escapeHtml(epreuve.title) + "</strong>";
-      if (appState.role === "admin" && !epreuve.visible) html += '<span class="og-badge">CACHÉ</span>';
-      html += "</div>";
+      let html = (appState.role === "admin" && !epreuve.visible ? '<div class="og-item-tags"><span class="og-badge">CACHÉ</span></div>' : "") +
+        '<div class="og-item-header"><strong>' + escapeHtml(epreuve.title) + "</strong></div>";
       if (epreuve.description) html += '<div class="og-item-desc">' + escapeHtml(epreuve.description) + "</div>";
       item.innerHTML = html;
 
@@ -3321,6 +3354,7 @@
     pageTitleEl.style.display = "none";
     terminalEl.style.display = "none";
     countdownWrapEl.style.display = "none";
+    document.body.classList.add("og-in");
     dashboardEl.style.display = "block";
     document.getElementById("og-dashboard-reveal").textContent = appState.reveal || "";
     if (appState.role === "admin") dashboardEl.classList.add("og-is-admin");
@@ -3404,17 +3438,38 @@
 
   // 6 lignes, cartes dimensionnées pour tenir à l'écran (défilement si l'écran est trop petit)
   function layoutCards() {
-    const n = appState.cards.length, rows = Math.max(1, Math.min(6, n)), cols = Math.ceil(n / rows);
+    const n = appState.cards.length;
     const W = cardsWall.clientWidth, H = cardsWall.clientHeight, g = Math.max(5, Math.min(10, W / 80));
-    const cw = Math.max(64, Math.min(150, (W - g * (cols + 1)) / cols, ((H - g * (rows + 1)) / rows) * 0.74));
+    // Ordinateur (écran large, en paysage) : lignes plus longues et cartes plus grandes.
+    // On retient le nombre de lignes qui donne les plus grandes cartes. Téléphone : 6 lignes, comme avant.
+    const desktop = W >= 900 && W > H * 1.15;
+    const maxW = desktop ? 220 : 150;
+    let rows = Math.max(1, Math.min(6, n));
+    if (desktop) {
+      let best = 0;
+      for (let r = 1; r <= Math.min(6, n); r++) {
+        const c = Math.ceil(n / r);
+        const w = Math.min(maxW, (W - g * (c + 1)) / c, ((H - g * (r + 1)) / r) * 0.74);
+        if (w > best + 0.5) { best = w; rows = r; }
+      }
+    }
+    const cols = Math.ceil(n / rows);
+    const cw = Math.max(64, Math.min(maxW, (W - g * (cols + 1)) / cols, ((H - g * (rows + 1)) / rows) * 0.74));
     cardsGrid.style.cssText = "--rows:" + rows + ";--w:" + cw + "px;--g:" + g + "px";
   }
 
   function placeBig() {
     if (!cardsBig) return;
     const wr = cardsWall.getBoundingClientRect();
-    const fw = Math.max(140, Math.min(300, window.innerWidth * 0.86, (wr.height - 16) * 0.74)), fh = fw / 0.74;
-    cardsBig.style.cssText = "--w:" + fw + "px;left:" + (wr.left + wr.width / 2 - fw / 2) + "px;top:" + (wr.top + wr.height / 2 - fh / 2) + "px";
+    const fw = Math.max(140, Math.min(300, window.innerWidth * 0.86, (wr.height - 16) * 0.74));
+    cardsBig.style.cssText = "--w:" + fw + "px;left:" + (wr.left + wr.width / 2 - fw / 2) + "px;top:0px";
+    recenterBig();
+  }
+  // La carte peut être plus haute que prévu (nom d'équipe sur plusieurs lignes) : on la recentre sur sa hauteur réelle
+  function recenterBig() {
+    if (!cardsBig) return;
+    const wr = cardsWall.getBoundingClientRect();
+    cardsBig.style.top = Math.max(4, wr.top + wr.height / 2 - cardsBig.offsetHeight / 2) + "px";
   }
 
   function scrambleText(el, text) {
@@ -3448,6 +3503,7 @@
     const fields = cardsBig.querySelectorAll(".og-card-f b");
     Array.prototype.forEach.call(fields, function (b, i) { b.style.setProperty("--wl", longestWord(vals[i])); });
     await Promise.all(Array.prototype.map.call(fields, function (b, i) { return scrambleText(b, vals[i]); }));
+    recenterBig();
   }
 
   // La carte du joueur quitte le mur et vient devant les autres
